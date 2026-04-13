@@ -1,0 +1,2042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelligentLearning | Master your beliefs</title>
+    <style>
+        :root {
+            --bg: #f3f6f9; --surface: #ffffff; --border: #e1e8ed;
+            --accent: #007bff; --century-purple: #745af2;
+            --text-main: #24292e; --text-muted: #6a737d;
+            --gold: #fbc02d; --success: #28a745;
+        }
+        body { background: var(--bg); color: var(--text-main); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+
+        /* Auth Screen */
+        #auth-screen { position: fixed; inset: 0; background: var(--century-purple); z-index: 3000; display: flex; align-items: center; justify-content: center; }
+        .auth-card { background: white; padding: 40px; border-radius: 20px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        
+        /* Layout */
+        .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
+        .viewport { flex: 1; padding: 40px; overflow-y: auto; }
+        
+        /* Category Tabs */
+        .category-bar { display: flex; gap: 10px; margin-bottom: 30px; overflow-x: auto; padding-bottom: 10px; }
+        .cat-tab { padding: 8px 16px; background: white; border: 1px solid var(--border); border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.9rem; font-weight: 600; transition: 0.2s; }
+        .cat-tab.active { background: var(--century-purple); color: white; border-color: var(--century-purple); }
+
+        /* Nugget Grid */
+        .nugget-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .nugget-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; position: relative; }
+        .nugget-card:hover { transform: translateY(-5px); border-color: var(--century-purple); }
+        .nugget-status { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--accent); margin-bottom: 5px; display: block; }
+
+        /* Award Shop */
+        .award-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 20px; }
+        .award-icon { font-size: 2rem; background: #eee; padding: 10px; border-radius: 10px; text-align: center; opacity: 0.3; transition: 0.3s; }
+        .award-icon.unlocked { opacity: 1; background: #fff5d7; border: 2px solid var(--gold); transform: scale(1.1); }
+        .box-roll { background: linear-gradient(135deg, var(--century-purple), #a371f7); color: white; padding: 40px; border-radius: 15px; text-align: center; cursor: pointer; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(116, 90, 242, 0.3); }
+
+        /* Global UI */
+        .stat-box { background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border); }
+        .nav-btn { width: 100%; padding: 12px; margin: 5px 0; border: none; background: none; text-align: left; cursor: pointer; font-weight: 600; border-radius: 8px; color: var(--text-muted); }
+        .nav-btn.active { background: rgba(116, 90, 242, 0.1); color: var(--century-purple); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
+        
+        #content-overlay { display: none; position: fixed; inset: 0; background: white; z-index: 2000; padding: 40px; flex-direction: column; align-items: center; justify-content: center; }
+        .opt-btn { width: 100%; padding: 18px; margin: 10px 0; border-radius: 10px; border: 1px solid var(--border); cursor: pointer; font-size: 1.1rem; text-align: left; background: #f8f9fa; }
+    </style>
+</head>
+<body>
+
+<div id="auth-screen">
+    <div class="auth-card">
+        <h1 style="color: var(--century-purple)">IntelligentLearning</h1>
+        <p>Understanding is the key to mastery.</p>
+        <input type="text" id="user-input" placeholder="Username">
+        <button class="nav-btn" style="background: var(--century-purple); color: white; text-align: center;" onclick="handleAuth()">Login / Sign Up</button>
+    </div>
+</div>
+
+<div class="sidebar">
+    <div class="stat-box">
+        <div id="display-name" style="font-weight: bold; margin-bottom: 10px;">User</div>
+        <div>💰 <span id="coin-val">0</span> Coins</div>
+        <div>🔥 <span id="streak-val">0</span> Streak</div>
+    </div>
+    <button class="nav-btn active" id="nav-path" onclick="showSection('path')">🗺️ My Path</button>
+    <button class="nav-btn" id="nav-shop" onclick="showSection('shop')">🛒 Award Shop</button>
+    <button class="nav-btn" id="nav-awards" onclick="showSection('awards')">🏆 My Awards</button>
+    <div style="flex-grow: 1;"></div>
+    <button class="nav-btn" style="color: #dc3545;" onclick="location.reload()">Logout</button>
+</div>
+
+<div class="viewport">
+    <div id="section-path">
+        <h1>Learning Path</h1>
+        <div class="category-bar" id="category-tabs"></div>
+        <div class="nugget-grid" id="path-grid"></div>
+    </div>
+
+    <div id="section-shop" style="display: none;">
+        <h1>Award Shop</h1>
+        <div class="box-roll" onclick="rollAward()">
+            <h2 style="margin:0">Mega Award Box</h2>
+            <p style="opacity:0.9">Spend 25 Coins to unlock a random Blook!</p>
+        </div>
+        <div id="roll-animation" style="text-align:center; font-size: 4rem; height: 100px;"></div>
+    </div>
+
+    <div id="section-awards" style="display: none;">
+        <h1>Award Collection</h1>
+        <div class="award-grid" id="award-display"></div>
+    </div>
+</div>
+
+<div id="content-overlay">
+    <div id="quiz-area" style="width: 100%; max-width: 600px; text-align: center;"></div>
+</div>
+
+<script>
+    const AWARDS = ["🧬", "🧪", "🧫", "🔬", "🔋", "💡", "🧠", "🌱", "🦴", "🌡️", "🛰️", "🔭", "🦖", "🌋"];
+    
+    const masteryData = {
+       "Activate 2": {
+            "B1.1": {
+                title: "B1.1 Nutrients",
+                slides: [
+                {h: "B1.1 Nutrients", p: "After this topic you will be able to describe the components of a healthy diet and also explain the role of each food group in the body."},
+                {h: "Nutrients", p: "Nutrients are substances that your body needs to survive. Types include carbohydrates, lipids, proteins, vitamins, minerals, water, and fibre."},
+                {h: "Proteins", p: "Proteins are needed to repair body tissues and to make new cells to grow. Muscles and organs are mostly made of proteins."},
+                {h: "Carbohydrates", p: "Main source of energy. Found in sugary foods (fast energy) and starchy foods like pasta (slow energy)."},
+                {h: "Lipids", p: "Lipids (fats and oils) provide energy storage, keep you warm, and protect your organs."},
+                {h: "Fibre", p: "Not a nutrient, but essential for a healthy digestive system to prevent constipation."}
+                ],
+                quiz: [
+                    {q: "Which nutrient is for tissue repair?", o: ["Lipids", "Protein", "Fibre", "Water"], a: 1},
+                    {q: "Which nutrient keeps you healthy?", o: ["Vitamins", "Carbs", "Fat", "Sugar"], a: 0},
+                    {q: "Main source of energy?", o: ["Minerals", "Carbohydrates", "Fibre"], a: 1},
+                    {q: "Prevents constipation?", o: ["Water", "Fibre", "Protein"], a: 1},
+                    {q: "Found in pasta and bread?", o: ["Vitamins", "Starchy Carbs", "Lipids"], a: 1},
+                    {q: "Keeps you hydrated?", o: ["Lipids", "Water", "Minerals"], a: 1},
+                    {q: "Needed for strong bones (Calcium)?", o: ["Vitamins", "Minerals", "Fibre"], a: 1},
+                    {q: "Provides energy storage?", o: ["Protein", "Lipids", "Water"], a: 1},
+                    {q: "Used to build muscles?", o: ["Carbs", "Protein", "Vitamins"], a: 1},
+                    {q: "Which is NOT a nutrient but needed?", o: ["Sugar", "Fibre", "Vitamins"], a: 1}
+                ]
+            },
+            "B1.2": {
+                title: "B1.2 Food Tests",
+                slides: [
+                    {h: "B1.2 Food Tests", p: "After this topic you will be able to describe how to test foods for starch, lipids, sugar and protein and describe the positive result for each food test."},
+                    {h: "How to Test for Starch", p: "To test for starch you use iodine solution, Iodine solution is an orange-yellow liquid. To test for starch, add a few drops of iodine solution to the food solution. If starch is present, the solution will change from orange-yellow to blue-black."},
+                    {h: "How to Test for Protein", p: "To test for protein you use copper sulfate solution and soldium hydroxide solution. Copper sulfate is a pale-blue liquid. Sodium hydroxide solution is a colourless liquid. To test for protein, add a few drops of copper sulfate solution and sodium hydroxide solution to the food solution. If protein is present, the solution will change from pale-blue to purple."},
+                    {h: "How to Test for Lipids", p: "To test for lipids in a solid piece of food you use a piece of filter paper. Rub the food on the filter paper and hold it up to the light. If a translucent spot appears, lipids are present. To test for lipids in a liquid solution you use ethanol. Add a few drops of the food solution to ethanol and shake the tube. If lipids are present, a cloudy emulsion will form."},
+                    {h: "How to Test for Sugars", p: "To test for simple sugars such as glucose you use Benedict's solution. Benedict's solution is a blue liquid. To test for sugars, add a few drops of Benedict's solution to the food solution and heat it in a water bath. If simple sugars are present, the solution will change from blue to brick-red."}
+                 ],
+                quiz: [
+                    {q: "What reagent is used to test for Starch?", o: ["Ethanol", "Iodine", "Biuret"], a: 1},
+                    {q: "Iodine turns what color for starch?", o: ["Blue-Black", "Purple", "Orange"], a: 0},
+                    {q: "What reagent is used to test for Protein?", o: ["Benedict's", "Biuret", "Iodine"], a: 1},
+                    {q: "What is the positive result color for Biuret test?", o: ["Red", "Purple", "Green"], a: 1},
+                    {q: "What reagent is used to test for Sugars?", o: ["Ethanol", "Benedict's", "Water"], a: 1},
+                    {q: "What is needed for Benedict's solution to work?", o: ["Freezing", "Heat", "Shaking"], a: 1},
+                    {q: "Sugar positive result color?", o: ["Blue", "Brick-Red", "Black"], a: 1},
+                    {q: "What reagent is used to test for Lipids (Fats)?", o: ["Ethanol", "Iodine", "Biuret"], a: 0},
+                    {q: "Ethanol result for fats?", o: ["Purple", "Cloudy Emulsion", "Clear"], a: 1},
+                    {q: "Initial color of Iodine?", o: ["Orange-Brown", "Blue", "Clear"], a: 0}
+                ]
+            },
+            "B1.3": {
+                title: "B1.3 Unhealthy Diets",
+                slides: [
+                    {h: "B1.3 Unhealthy Diets", p: "After this topic you will be able to describe the health risks of being underweight or overweight and also describe the effects of vitamin and mineral deficiencies."},
+                    {h: "Why is it unhealthy to be underweight?", p: "Underweight people often suffer from poor immune systems, fragile bones, and a lack of energy."},
+                    {h: "Why is it unhealthy to be overweight?", p: "Overweight people often suffer from heart disease, diabetes, and joint issues."},
+                    {h: "What are vitamin and mineral deficiencies?", p: "When a person does not have enough of a certain vitamin or mineral, they are said to have a deficiency. This can damage a person's health. For example, a vitamin A deficiency can lead to 'night blindness'. This makes it difficult for you to see clearly in dim light. A vitamin D deficiency can lead to a condition called rickets, where your bones become weak."},
+                    {h: "How much energy do you need?", p: "Your body needs energy to function properly. The amount of energy you need depends on your age, your body size, and how active you are. The more exercise you do, the more energy your body requires."},
+                ],
+
+                quiz: [
+                    {q: "What does lack of Vitamin C cause?", o: ["Rickets", "Scurvy", "Anemia"], a: 1},
+                    {q: "What does lack of Vitamin D cause?", o: ["Rickets", "Scurvy", "Anemia"], a: 0},
+                    {q: "What does lack of Iron cause?", o: ["Scurvy", "Anemia", "Obesity"], a: 1},
+                    {q: "What is Vitamin D essential for?", o: ["Eyesight", "Bones", "Skin"], a: 1},
+                    {q: "What does Scurvy affect?", o: ["Gums/Skin", "Bones", "Brain"], a: 0},
+                    {q: "What can too much sugar lead to?", o: ["Scurvy", "Type 2 Diabetes", "Anemia"], a: 1},
+                    {q: "What increases the risk of?", o: ["Rickets", "Heart Disease", "Strong Bones"], a: 1},
+                    {q: "What does starvation lead to?", o: ["Stronger Immune System", "Poor Immune System", "Diabetes"], a: 1},
+                    {q: "What is Vitamin A essential for?", o: ["Hearing", "Night Vision", "Hair Growth"], a: 1},
+                    {q: "Where are minerals needed?", o: ["Large amounts", "Small amounts", "Never"], a: 1}
+                ]
+            },
+            "B1.4": {
+                title: "B1.4 Digestive System",
+                slides: [
+                    {h: "B1.4 Digestive System", p: "After this topic you will be able to describe the structure and function of the main parts of the digestive system and describe the process of digestion."},
+                    {h: "What is the digestive system?", p: "The digestive system is a group of organs that work together to break down food. The nutrients in most of the food you eat are large molecules, like lipids and proteins. During digestion these large molecules are broken down into small molecules of nutrients. These nutrients can then pass into the bllood where they are used by the body."},
+                    {h: "Mouth", p: "Food is chewed and mixed with saliva. Teeth help to break the food into smaller chunks."},
+                    {h: "Oesophagus", p: "The oesophagus is a muscular tube that connects the mouth to the stomach."},
+                    {h: "Stomach", p: "The stomach is a muscular sac that churns the food and mixes it with digestive juices, including acid and enzymes."},
+                    {h: "Small Intestine", p: "The small intestine is a long, coiled tube where most digestion and absorption of nutrients takes place. The inner walls have many folds called villi, which increase the surface area for absorption."},
+                    {h: "Large Intestine", p: "The large intestine absorbs water from the remaining indigestible food matter and forms solid waste (feces) to be excreted."},
+                    {h: "Rectum", p: "The rectum is the final section of the large intestine where fecal matter is stored before excretion."},
+                    {h: "Anus", p: "The anus is the opening at the end of the rectum through which fecal matter is expelled."},
+                    {h: "Moving through the digestive system", p: "Fibre in your food isn't digested but adds bulk to the food,. Muscles push against this, forcing food along the gut. Eating lots of fibre-rich foods such as vegetables and wholemeal bread helps prevent constipation."},
+                ],
+                quiz: [
+                    {q: "Where does digestion start?", o: ["Stomach", "Mouth", "Small Intestine"], a: 1},
+                    {q: "What does the small intestine absorb?", o: ["Water", "Nutrients", "Waste"], a: 1},
+                    {q: "What does the large intestine absorb?", o: ["Proteins", "Water", "Sugar"], a: 1},
+                    {q: "Where is HCL found in our body?", o: ["Mouth", "Stomach", "Liver"], a: 1},
+                    {q: "What increases surface area in the small intestine?", o: ["Villi", "Teeth", "Bile"], a: 0},
+                    {q: "Where is feces stored?", o: ["Stomach", "Rectum", "Liver"], a: 1},
+                    {q: "Tube connecting mouth to stomach?", o: ["Trachea", "Gullet/Oesophagus", "Artery"], a: 1},
+                    {q: "Bile is produced in the?", o: ["Stomach", "Liver", "Heart"], a: 1}
+                ]
+            },
+            "B1.5": {
+                title: "B1.5 Enzymes & Bacteria",
+                slides: [
+                    {h: "B1.5 Enzymes & Bacteria", p: "After this topic you will be able to describe the role of enzymes in digestion, describe the lock and key model of enzyme action and also explain the role of gut bacteria."},
+                    {h: "What are Enzymes?", p: "Enzymes are special proteins that act as biological catalysts, speeding up the breakdown of food."},
+                    {h: "Lock and Key", p: "Each enzyme has a specific shape called an active site. Only the right food molecule can fit into it."},
+                    {h: "Gut Bacteria", p: "Your large intestine is home to microorganisms that produce vitamins and help digest tough fibers."}
+                ],
+                quiz: [
+                    {q: "What is an enzyme?", o: ["A type of bacteria", "A biological catalyst", "A food group"], a: 1},
+                    {q: "What are proteins broken down into?", o: ["Glucose", "Amino Acids", "Fatty Acids"], a: 1},
+                    {q: "Where is Amylase (carbohydrase) first found?", o: ["Stomach", "Saliva/Mouth", "Liver"], a: 1},
+                    {q: "What does Lipase break down?", o: ["Starch", "Proteins", "Lipids (Fats)"], a: 2},
+                    {q: "The part of the enzyme where the molecule fits is the...", o: ["Keyhole", "Active Site", "Stomach"], a: 1},
+                    {q: "What do gut bacteria produce for us?", o: ["Proteins", "Vitamins", "Acid"], a: 1},
+                    {q: "Where do most helpful bacteria live?", o: ["Mouth", "Stomach", "Large Intestine"], a: 2},
+                    {q: "What happens to an enzyme after it works?", o: ["It is destroyed", "It is reused", "It turns into food"], a: 1},
+                    {q: "Starch is broken down into...", o: ["Amino Acids", "Sugar (Glucose)", "Fats"], a: 1},
+                    {q: "Why are enzymes 'specific'?", o: ["They only work in the dark", "Their active site only fits one molecule", "They only work on junk food"], a: 1}
+                ]
+            },
+            "B1.6": {
+                title: "B1.6 Drugs",
+                slides: [
+                    {h: "B1.6 Drugs", p: "After this topic you will be able to describe the difference between recreational and medicinal drugs, describe the effects of stimulants, depressants, alcohol and smoking and also explain the dangers of drug addiction."},
+                    {h: "What is a Drug?", p: "A drug is a substance that changes the chemical reactions in your body. They are divided into medicinal and recreational groups."},
+                    {h: "Stimulants & Depressants", p: "Stimulants speed up the nervous system (alertness), while depressants slow it down (slower reactions)."},
+                    {h: "Medicinal vs Recreational Drugs", p: "Medicinal drugs are used to treat illnesses and are usually safe when used correctly. Recreational drugs are taken for pleasure and can be harmful."},
+                    {h: "Addiction", p: "Taking a drug regularly can lead to addiction. Stopping the drug then causes painful withdrawal symptoms."}
+                ],
+
+                quiz: [
+                    {q: "What is a drug?", o: ["A type of food", "A substance that changes body chemistry", "A type of bacteria"], a: 1},
+                    {q: "What does a stimulant do?", o: ["Slows down reactions", "Speeds up the nervous system", "Causes sleepiness"], a: 1},
+                    {q: "Which of these is a depressant?", o: ["Caffeine", "Alcohol", "Cocaine"], a: 1},
+                    {q: "What is addiction?", o: ["Being allergic to a drug", "A physical or mental need for a drug", "Taking medicine once"], a: 1},
+                    {q: "Which substance in cigarettes causes cancer?", o: ["Nicotine", "Tar", "Carbon Monoxide"], a: 1},
+                    {q: "What does Carbon Monoxide do to the blood?", o: ["Causes clots", "Carries more oxygen", "Reduces oxygen capacity"], a: 2},
+                    {q: "Which organ is most damaged by long-term alcohol use?", o: ["Heart", "Liver", "Lungs"], a: 1},
+                    {q: "Caffeine is an example of a...", o: ["Depressant", "Stimulant", "Painkiller"], a: 1},
+                    {q: "What are withdrawal symptoms?", o: ["Side effects of a cure", "Sickness when stopping an addictive drug", "The feeling of being high"], a: 1},
+                    {q: "Why is Nicotine dangerous?", o: ["It causes cancer", "It is highly addictive", "It turns lungs black"], a: 1}
+                ]
+            },
+            "B1.7": {
+                title: "B1.7 Alcohol",
+                slides: [
+                    {h: "B1.7 Alcohol", p: "After this topic you will be able to describe the effects of alcohol on the body and explain the dangers of excessive alcohol consumption."},
+                    {h: "What is a alcohol?", p: "Alcohol contains ethanol. It is absorbed into the blood and affects the nervous system as a depressant."},
+                    {h: "Short-term Impact", p: "Alcohol slows down your brain. This leads to slower reaction times, blurred vision, and loss of balance."},
+                    {h: "Liver Damage", p: "The liver breaks down alcohol, but heavy drinking over years can lead to 'cirrhosis'—the scarring of the liver."},
+                    {h: "Pregnancy", p: "Drinking during pregnancy can cause Fetal Alcohol Syndrome (FAS), which affects the baby's brain and physical development."}
+                ],
+                quiz: [
+                    {q: "What is the addictive drug found in alcoholic drinks?", o: ["Methane", "Ethanol", "Caffeine"], a: 1},
+                    {q: "Alcohol is classified as a...", o: ["Stimulant", "Depressant", "Hallucinogen"], a: 1},
+                    {q: "How does alcohol affect reaction time?", o: ["It speeds it up", "It slows it down", "It has no effect"], a: 1},
+                    {q: "Which organ is responsible for breaking down alcohol?", o: ["Lungs", "Liver", "Kidneys"], a: 1},
+                    {q: "What is 'Cirrhosis'?", o: ["Brain damage", "Scarring of the liver", "A type of lung cancer"], a: 1},
+                    {q: "What can happen if a woman drinks during pregnancy?", o: ["Fetal Alcohol Syndrome", "The baby grows faster", "Better immune system"], a: 0},
+                    {q: "Why is drink-driving illegal?", o: ["It makes you go too fast", "It slows down your reaction time", "It makes you sleepy"], a: 1},
+                    {q: "What happens to the nervous system under alcohol?", o: ["Signals travel faster", "Signals travel slower", "Signals stop completely"], a: 1},
+                    {q: "Which of these is a long-term effect of alcohol?", o: ["Blurred vision", "Stomach cramps", "Permanent brain damage"], a: 2},
+                    {q: "Alcohol is absorbed into the... before reaching the brain.", o: ["Muscles", "Bloodstream", "Bones"], a: 1}
+                ]
+            },
+            "B1.8": {
+                title: "B1.8 Smoking",
+                slides: [
+                    {h: "B1.8 Smoking", p: "After this topic you will be able to describe the effects of smoking on the body and explain the dangers of tobacco smoke on pregnancy."},
+                    {h: "Tobacco Smoke", p: "Tobacco smoke contains over 4,000 chemicals. The main ones are nicotine, tar, and carbon monoxide."},
+                    {h: "Lung Damage", p: "Tar irritates the airways and paralyzes cilia. This can lead to bronchitis and emphysema (damaged air sacs)."},
+                    {h: "Oxygen Problems", p: "Carbon monoxide binds to red blood cells, reducing the oxygen carried around the body. This strains the heart."},
+                    {h: "Pregnancy Risks", p: "Smoking during pregnancy reduces the oxygen the baby receives, often leading to a low birth weight."}
+                ],
+
+                quiz: [
+                    {q: "Which chemical in cigarettes is addictive?", o: ["Tar", "Nicotine", "Carbon Monoxide"], a: 1},
+                    {q: "What does Tar do to the lungs?", o: ["Increases oxygen", "Coats the cilia and air sacs", "Speeds up heart rate"], a: 1},
+                    {q: "Why is Carbon Monoxide dangerous?", o: ["It causes addiction", "It reduces oxygen in the blood", "It makes teeth yellow"], a: 1},
+                    {q: "What are the tiny hairs that clear mucus called?", o: ["Villi", "Cilia", "Alveoli"], a: 1},
+                    {q: "What is emphysema?", o: ["A type of addiction", "Disease where air sacs are destroyed", "A yellowing of the skin"], a: 1},
+                    {q: "How does nicotine affect the heart?", o: ["It slows it down", "It makes it beat faster", "It has no effect"], a: 1},
+                    {q: "Smoking increases the risk of which gas in the blood?", o: ["Oxygen", "Carbon Monoxide", "Nitrogen"], a: 1},
+                    {q: "What is a major symptom of paralyzed cilia?", o: ["Weight loss", "Smoker's cough", "Better breathing"], a: 1},
+                    {q: "Tobacco smoke contains roughly how many chemicals?", o: ["100", "4,000", "1 million"], a: 1},
+                    {q: "Low birth weight in babies is linked to...", o: ["Vitamin C", "Maternal smoking", "Eating fibre"], a: 1}
+                ]
+            },
+            "B1_Summary": {
+                title: "B1 Summary: Health & Lifestyle",
+            slides: [ 
+                {h: "Chapter 1 Review", p: "You have covered Nutrients, Food Tests, Digestion, Enzymes, Bacteria, and the impact of Drugs, Alcohol, and Smoking."},
+                {h: "Key Concept: Efficiency", p: "The body uses catalysts (enzymes) and high surface area (villi) to get nutrients into the blood as fast as possible."},
+                {h: "Key Concept: Balance", p: "Health is a state of physical and mental well-being. Imbalances lead to deficiency diseases or addiction."}
+            ],
+                quiz: [
+                    {q: "Which reagent tests for Protein?", o: ["Iodine", "Biuret", "Benedict's"], a: 1},
+                    {q: "Where is water absorbed?", o: ["Small Intestine", "Large Intestine", "Stomach"], a: 1},
+                    {q: "What speeds up reactions in the body?", o: ["Hormones", "Enzymes", "Vitamins"], a: 1},
+                    {q: "What does Carbon Monoxide reduce in the blood?", o: ["Sugar", "Oxygen", "Platelets"], a: 1},
+                    {q: "A lack of Vitamin C causes...", o: ["Rickets", "Anemia", "Scurvy"], a: 2},
+                    {q: "Ethanol is found in...", o: ["Tobacco", "Alcohol", "Antibiotics"], a: 1},
+                    {q: "Villi are found in the...", o: ["Mouth", "Stomach", "Small Intestine"], a: 2},
+                    {q: "Nicotine is a...", o: ["Depressant", "Stimulant", "Nutrient"], a: 1},
+                    {q: "What color does Iodine turn in starch?", o: ["Purple", "Blue-Black", "Red"], a: 1},
+                    {q: "Which enzyme breaks down Lipids?", o: ["Protease", "Amylase", "Lipase"], a: 2}
+                ]
+            },
+            "B2.1": {
+                title: "B2.1 Photosynthesis",
+                slides: [
+                    {h: "B2.1 Photosynthesis", p: "After this topic you will be able to describe the process of photosynthesis, including the reactants and products, and explain the role of chlorophyll and stomata."},
+                    {h: "What is photosynthesis?", p: "Photosynthesis is the process plants use to make food (glucose) using light, carbon dioxide, and water."},
+                    {h: "The Equation", p: "Carbon Dioxide + Water -> Glucose + Oxygen. This reaction happens in the chloroplasts of leaf cells."},
+                    {h: "Chlorophyll", p: "Chlorophyll is the green pigment that absorbs light energy. Without it, photosynthesis cannot happen."},
+                    {h: "Gas Exchange", p: "Carbon dioxide enters the leaf through tiny pores called stomata, while oxygen exits through them."}
+             ],
+                quiz: [
+                    {q: "What are the two 'reactants' needed for photosynthesis?", o: ["Oxygen & Water", "Carbon Dioxide & Water", "Glucose & Light"], a: 1},
+                    {q: "What is the green pigment in plants called?", o: ["Chloroplast", "Chlorophyll", "Cytoplasm"], a: 1},
+                    {q: "Where in the cell does photosynthesis happen?", o: ["Nucleus", "Chloroplast", "Vacuole"], a: 1},
+                    {q: "What is the useful product of photosynthesis?", o: ["Carbon Dioxide", "Glucose", "Water"], a: 1},
+                    {q: "What is the waste product of photosynthesis?", o: ["Oxygen", "Carbon Dioxide", "Nitrogen"], a: 0},
+                    {q: "How does water get into the plant?", o: ["Through stomata", "Root hair cells", "Through the flowers"], a: 1},
+                    {q: "What are the tiny holes under a leaf called?", o: ["Villi", "Stomata", "Cilia"], a: 1},
+                    {q: "Which type of energy is used for this reaction?", o: ["Chemical", "Light", "Thermal"], a: 1},
+                    {q: "What happens to the oxygen produced?", o: ["Stored in roots", "Released into the air", "Used for growth"], a: 1},
+                    {q: "Photosynthesis is a... reaction.", o: ["Physical", "Chemical", "Biological only"], a: 1}
+                ]
+            },
+            "B2.2": {
+                title: "B2.2 Leaf Structure",
+            slides: [   
+                {h: "B2.2 Leaf Structure", p: "After this topic you will be able to describe the structure of leaves and explain the function of each part."},
+                {h: "Leaf Components", p: "Leaves consist of several layers, each with a specific role in the plant's survival. Most leaves are green which absorbs sunlight, are thin which allows gases to diffuse in and out of the leaf easily, have a large surface area to absorb as much light as possible, and have veins like xylem and phloem to transport water and nutrients."},
+                {h: "Internal Layers", p: "The Palisade layer is at the top for light, while the Spongy layer has air spaces for gas exchange."},
+                {h: "The Cuticle", p: "A waxy, waterproof layer on the top of the leaf prevents water from evaporating away too quickly."},
+                {h: "Stomata", p: "Found on the underside of the leaf. They are pores that open and close to control gas exchange and water loss."}
+            ],
+                quiz: [
+                    {q: "Why are leaves thin?", o: ["To stay light", "Short diffusion distance for gases", "To hide from animals"], a: 1},
+                    {q: "Which layer contains the most chloroplasts?", o: ["Spongy Mesophyll", "Palisade Mesophyll", "Waxy Cuticle"], a: 1},
+                    {q: "What is the purpose of air spaces in the spongy layer?", o: ["To help the leaf float", "To allow gas diffusion", "To store water"], a: 1},
+                    {q: "What protects the leaf from losing too much water?", o: ["Stomata", "Waxy Cuticle", "Xylem"], a: 1},
+                    {q: "Where are stomata usually found?", o: ["Top of the leaf", "Underside of the leaf", "In the stem"], a: 1},
+                    {q: "Which cells control the opening of stomata?", o: ["Palisade cells", "Guard cells", "Root cells"], a: 1},
+                    {q: "What is the function of the leaf veins (xylem)?", o: ["Transport water", "Absorb light", "Release oxygen"], a: 0},
+                    {q: "What enters the leaf through the stomata?", o: ["Oxygen", "Carbon Dioxide", "Glucose"], a: 1},
+                    {q: "Leaves have a large surface area to...", o: ["Catch rain", "Absorb maximum light", "Stay cool"], a: 1},
+                    {q: "What exits the leaf as a waste product?", o: ["Carbon Dioxide", "Oxygen", "Water vapor only"], a: 1}
+                ]
+            },
+            "B2.3": {
+                title: "B2.3 Plant Minerals",
+                slides: [
+                    {h: "B2.3 Plant Minerals", p: "After this topic you will be able to describe the minerals plants need for healthy growth and explain the effects of mineral deficiencies."},
+                    {h: "Why do plants need minerals?", p: "Plants need more than just water and CO2. They need minerals from the soil to make complex molecules like proteins and chlorophyll. These are absorbed through root hair cells."},
+                    {h: "Nitrates (Growth)", p: "Nitrates are essential for making proteins. Proteins are used to build new cells so the plant can grow."},
+                    {h: "Magnesium (Green Color)", p: "Magnesium is needed to make chlorophyll. Without it, the plant cannot absorb sunlight efficiently for photosynthesis."},
+                    {h: "Phosphorus & Potassium", p: "Phosphorus is needed for healthy roots and DNA. Potassium is needed for healthy flowers and fruit."},
+                    {h: "Deficiency Symptoms", p: "If a plant lacks Nitrates, it will have stunted growth. If it lacks Magnesium, the leaves will turn yellow (chlorosis)."}
+                ],
+                quiz: [
+                    {q: "How do plants get minerals?", o: ["From the air", "From the soil/roots", "From sunlight"], a: 1},
+                    {q: "What mineral is needed for proteins?", o: ["Magnesium", "Nitrates", "Carbon"], a: 1},
+                    {q: "What mineral is needed for Chlorophyll?", o: ["Iron", "Magnesium", "Potassium"], a: 1},
+                    {q: "Symptom of Nitrate deficiency?", o: ["Yellow leaves", "Stunted growth", "Purple stems"], a: 1},
+                    {q: "Symptom of Magnesium deficiency?", o: ["Small roots", "Yellow leaves", "Giant flowers"], a: 1},
+                    {q: "What are minerals absorbed through?", o: ["Stomata", "Root hair cells", "Petals"], a: 1},
+                    {q: "Phosphorus is mainly for...", o: ["Roots", "Making sugar", "Catching flies"], a: 0},
+                    {q: "What is 'Chlorosis'?", o: ["Fast growth", "Yellowing of leaves", "Plant death"], a: 1},
+                    {q: "Potassium helps with...", o: ["Roots", "Flowers and Fruit", "Staying upright"], a: 1},
+                    {q: "Do plants get minerals from water?", o: ["No, only air", "Yes, dissolved in water", "Only from bugs"], a: 1}
+                ]
+            },
+            "B2.4": {
+                title: "B2.4 Chemosynthesis",
+                slides: [
+                    {h: "B2.4 Chemosynthesis", p: "After this topic you will be able to describe the process of chemosynthesis and identify the differences between it and photosynthesis."},
+                    {h: "What is Chemosynthesis?", p: "Some bacteria don't use light to make food. Instead, they use chemical reactions. This is called chemosynthesis. It often happens in places with no light, like the deep ocean."},
+                    {h: "The Energy Source", p: "Instead of sunlight, these organisms use energy from chemicals like sulfur or methane. They still produce glucose (food) for themselves."},
+                    {h: "Where does it happen?", p: "Commonly found near hydrothermal vents on the ocean floor, or inside the bodies of tube worms where bacteria live in a symbiotic relationship."},
+                    {h: "Photosynthesis vs Chemosynthesis", p: "Photosynthesis uses LIGHT; Chemosynthesis uses CHEMICALS. Both processes produce glucose and both require Carbon Dioxide."},
+                    {h: "Sulfur Bacteria", p: "A common type of chemosynthetic bacteria uses hydrogen sulfide (which smells like rotten eggs) to produce food."}
+                ],
+                quiz: [
+                    {q: "What is the primary energy source for chemosynthesis?", o: ["Sunlight", "Chemicals", "Heat"], a: 1},
+                    {q: "Which gas do both photo- and chemosynthesis need?", o: ["Oxygen", "Carbon Dioxide", "Nitrogen"], a: 1},
+                    {q: "Where might you find chemosynthetic bacteria?", o: ["Top of a tree", "Deep sea vents", "Inside a freezer"], a: 1},
+                    {q: "What 'food' molecule is produced in both processes?", o: ["Protein", "Glucose", "Starch"], a: 1},
+                    {q: "Which chemical is often used by deep-sea bacteria?", o: ["Gold", "Hydrogen Sulfide", "Helium"], a: 1},
+                    {q: "True or False: Chemosynthesis requires light.", o: ["True", "False"], a: 1},
+                    {q: "What is a waste product of some chemosynthesis?", o: ["Sulfur", "Iron", "Carbon"], a: 0},
+                    {q: "What do tube worms rely on for food?", o: ["Small fish", "Chemosynthetic bacteria", "Plankton"], a: 1},
+                    {q: "Chemosynthesis is performed by...", o: ["Humans", "Bacteria", "Oak trees"], a: 1},
+                    {q: "The word 'chemo' refers to...", o: ["Light", "Chemicals", "Cold"], a: 1}
+                ]
+            },
+            "B2.5": {
+                title: "B2.5 Aerobic Respiration",
+                slides: [
+                    {h: "B2.5 Aerobic Respiration", p: "After this topic you will be able to describe the process of aerobic respiration and explain the role of mitochondria in cells."},
+                    {h: "What is Respiration?", p: "Respiration is a chemical reaction that happens in every living cell. It is the process of releasing energy from glucose. It is NOT the same as breathing!"},
+                    {h: "The Aerobic Equation", p: "Aerobic means 'with oxygen'. The reaction is: Glucose + Oxygen -> Carbon Dioxide + Water (+ Energy)."},
+                    {h: "Where does it happen?", p: "Respiration happens in the Mitochondria. These are the 'powerhouses' of the cell. Cells that need lots of energy (like muscle cells) have many mitochondria."},
+                    {h: "Why do we need energy?", p: "Organisms use energy for: 1. Muscle contraction (movement), 2. Maintaining body temperature, 3. Building new molecules (growth and repair)."},
+                    {h: "Transporting Reactants", p: "Oxygen is taken in by the lungs and carried by red blood cells. Glucose is absorbed in the small intestine and carried in the plasma."}
+                ],
+                quiz: [
+                    {q: "What is the primary purpose of respiration?", o: ["To breathe", "To release energy", "To make food"], a: 1},
+                    {q: "Where in the cell does respiration occur?", o: ["Nucleus", "Mitochondria", "Ribosomes"], a: 1},
+                    {q: "What does 'Aerobic' mean?", o: ["Without oxygen", "With oxygen", "With water"], a: 1},
+                    {q: "What are the two reactants for aerobic respiration?", o: ["Glucose & Oxygen", "CO2 & Water", "Oxygen & Sugar"], a: 0},
+                    {q: "What are the waste products of this reaction?", o: ["Oxygen & Glucose", "CO2 & Water", "Nitrogen & Heat"], a: 1},
+                    {q: "Which cell type would have the most mitochondria?", o: ["Skin cell", "Muscle cell", "Fat cell"], a: 1},
+                    {q: "How does glucose reach your cells?", o: ["Through the nerves", "Through the blood", "Through the lungs"], a: 1},
+                    {q: "Is respiration the same as breathing?", o: ["Yes", "No, breathing is gas exchange"], a: 1},
+                    {q: "What happens to the energy released?", o: ["It is destroyed", "Used for movement/growth", "Turned into oxygen"], a: 1},
+                    {q: "What is the word equation?", o: ["Glucose+Oxygen -> CO2+Water", "CO2+Water -> Glucose+Oxygen"], a: 0}
+                ]
+            },
+            "B2.6": {
+                title: "B2.6 Anaerobic Respiration",
+                slides: [
+                    {h: "B2.6 Anaerobic Respiration", p: "After this topic you will be able to describe the process of anaerobic respiration in humans and microorganisms, and explain the concept of oxygen debt."},
+                    {h: "What is Anaerobic Respiration?", p: "Anaerobic means 'without oxygen'. This happens when your body cannot supply enough oxygen to your muscles fast enough, such as during a sprint."},
+                    {h: "In Humans (Muscles)", p: "Glucose -> Lactic Acid (+ little energy). Lactic acid builds up in muscles, causing a painful burning sensation and cramps."},
+                    {h: "Oxygen Debt", p: "After exercise, you keep breathing deeply to get extra oxygen to break down the lactic acid. This 'extra' oxygen needed is called oxygen debt."},
+                    {h: "In Microorganisms (Fermentation)", p: "Yeast and some plants respire anaerobically differently: Glucose -> Ethanol + Carbon Dioxide. This is called fermentation."},
+                    {h: "Why use Anaerobic?", p: "It releases much less energy than aerobic respiration, but it happens much faster. It's a 'last resort' for survival or high intensity."}
+                ],
+                quiz: [
+                    {q: "What does 'Anaerobic' mean?", o: ["With oxygen", "Without oxygen", "In water"], a: 1},
+                    {q: "What is the waste product in human muscles?", o: ["Ethanol", "Lactic Acid", "Oxygen"], a: 1},
+                    {q: "What is the product of anaerobic respiration in yeast?", o: ["Lactic Acid", "Ethanol & CO2", "Water"], a: 1},
+                    {q: "How much energy is released compared to aerobic?", o: ["More", "The same", "Much less"], a: 2},
+                    {q: "What causes the 'burn' during heavy exercise?", o: ["Oxygen", "Lactic Acid build-up", "Sugar"], a: 1},
+                    {q: "What is 'Oxygen Debt'?", o: ["Oxygen needed to remove lactic acid", "A type of lung disease", "Holding your breath"], a: 0},
+                    {q: "In which industry is yeast fermentation useful?", o: ["Baking and Brewing", "Car manufacturing", "Electronics"], a: 0},
+                    {q: "Where does anaerobic respiration happen in the cell?", o: ["Mitochondria", "Cytoplasm", "Nucleus"], a: 1},
+                    {q: "Why do we pant after a race?", o: ["To cool down", "To pay back oxygen debt", "To get more glucose"], a: 1},
+                    {q: "True or False: Anaerobic respiration uses oxygen.", o: ["True", "False"], a: 1}
+                ]
+            },
+            "B2.7": {
+                title: "B2.7 Food Chains and Webs",
+                slides: [
+                    {h: "B2.7 Food Chains and Webs", p: "After this topic you will be able to describe how energy is transferred through food chains and explain the difference between a food chain and a food web."},
+                    {h: "Producers and Consumers", p: "Every food chain starts with a Producer (usually a green plant) that makes its own food via photosynthesis. Animals that eat these plants are Consumers."},
+                    {h: "The Flow of Energy", p: "Arrows in a food chain represent the flow of energy. If an arrow points from a leaf to a caterpillar, it means the energy in the leaf is moving into the caterpillar."},
+                    {h: "Trophic Levels", p: "1. Producer (Plant) -> 2. Primary Consumer (Herbivore) -> 3. Secondary Consumer (Carnivore) -> 4. Tertiary Consumer (Top Predator)."},
+                    {h: "Food Webs", p: "Most animals eat more than one thing. A food web is a network of many interconnected food chains, showing how energy flows through an entire ecosystem."},
+                    {h: "Interdependence", p: "Organisms in a web depend on each other. If one species (like a predator) is removed, the population of its prey will likely increase, which then affects the plants they eat."}
+                ],
+                quiz: [
+                    {q: "What do the arrows in a food chain represent?", o: ["Who eats whom", "The flow of energy", "The direction of movement"], a: 1},
+                    {q: "What is always at the start of a food chain?", o: ["A predator", "A producer", "A decomposer"], a: 1},
+                    {q: "An animal that eats only plants is called a...", o: ["Carnivore", "Herbivore", "Omnivore"], a: 1},
+                    {q: "What is a food web?", o: ["A spider's home", "Interconnected food chains", "A list of favorite foods"], a: 1},
+                    {q: "What happens to the energy as it moves up the chain?", o: ["It increases", "Most is lost to the environment", "It stays exactly the same"], a: 1},
+                    {q: "Which of these is a secondary consumer?", o: ["Grass", "A rabbit eating grass", "A fox eating a rabbit"], a: 2},
+                    {q: "If a top predator is removed, the prey population usually...", o: ["Decreases", "Increases", "Stays the same"], a: 1},
+                    {q: "Where do producers get their energy?", o: ["From eating bugs", "From the Sun", "From the soil"], a: 1},
+                    {q: "What is a tertiary consumer?", o: ["The first eater", "The second eater", "The third eater"], a: 2},
+                    {q: "Why are food webs more realistic than food chains?", o: ["They are prettier", "Animals usually eat multiple things", "They include humans"], a: 1}
+                ]
+            },
+            "B2.8": {
+                title: "B2.8 Disruption to Food Chains",
+                slides: [
+                    {h: "B2.8 Disruption to Food Chains", p: "After this topic you will be able to explain how changes in an ecosystem (like toxic materials or population changes) affect food webs."},
+                    {h: "Interdependence", p: "All organisms in a food web depend on each other. If the population of one organism changes, it creates a 'ripple effect' throughout the entire web."},
+                    {h: "Bioaccumulation", p: "This happens when toxins (like pesticides or mercury) build up in a food chain. Producers take in a small amount, but the top predator ends up with a lethal dose because they eat so many prey."},
+                    {h: "Bioamplification", p: "As you move up the food chain, the concentration of toxins increases at each level. This often leads to death or infertility in top predators like eagles or sharks."},
+                    {h: "Invasive Species", p: "If a new species is introduced, it may have no natural predators. It will eat the food of native species, causing their populations to crash."},
+                    {h: "Environmental Changes", p: "Factors like global warming, deforestation, or water pollution can destroy habitats, removing the 'Producers' and causing the entire web to collapse."}
+                ],
+                quiz: [
+                    {q: "What is bioaccumulation?", o: ["The buildup of toxins in an organism", "Plants growing faster", "Animals hibernating"], a: 0},
+                    {q: "Which level of a food chain is most affected by toxins?", o: ["Producers", "Primary Consumers", "Top Predators"], a: 2},
+                    {q: "If a disease kills all the rabbits, what happens to the foxes?", o: ["They increase", "They decrease (less food)", "They turn into herbivores"], a: 1},
+                    {q: "If a disease kills all the rabbits, what happens to the grass?", o: ["It decreases", "It increases (less being eaten)", "It dies"], a: 1},
+                    {q: "What is an 'invasive species'?", o: ["A species that belongs there", "A non-native species that causes harm", "A friendly pet"], a: 1},
+                    {q: "Toxins in a food chain...", o: ["Disappear at the top", "Increase in concentration at the top", "Only stay in plants"], a: 1},
+                    {q: "What can cause an ecosystem to disrupt?", o: ["Pollution", "New predators", "Both of these"], a: 2},
+                    {q: "Why do top predators get more toxins?", o: ["They are bigger", "They eat many contaminated prey", "They live longer"], a: 1},
+                    {q: "Interdependence means...", o: ["Animals live alone", "Organisms rely on each other", "Plants don't need animals"], a: 1},
+                    {q: "How can humans prevent food web disruption?", o: ["By polluting more", "By protecting habitats", "By removing all predators"], a: 1}
+                ]
+            },
+            "B2.9": {
+                title: "B2.9 Ecosystems",
+                slides: [
+                    {h: "B2.9 Ecosystems", p: "After this topic you will be able to define an ecosystem and distinguish between biotic and abiotic factors."},
+                    {h: "What is an Ecosystem?", p: "An ecosystem consists of all the living organisms (community) in a particular area, interacting with the non-living parts of their environment."},
+                    {h: "Biotic Factors", p: "Biotic means 'living'. These factors include food availability, new predators, and diseases."},
+                    {h: "Abiotic Factors", p: "Abiotic means 'non-living'. These are physical and chemical parts of the environment, such as temperature, light intensity, soil pH, and water levels."},
+                    {h: "Niche", p: "A niche is the particular place or role that an organism has within an ecosystem. No two species can occupy the exact same niche for long without competition."},
+                    {h: "Community vs. Population", p: "A population is all the members of ONE species. A community is ALL the different populations (species) living together in the same area."}
+                ],
+                quiz: [
+                    {q: "What does 'Abiotic' mean?", o: ["Living", "Non-living", "Underwater"], a: 1},
+                    {q: "Which of these is a Biotic factor?", o: ["Temperature", "Competition for food", "Wind speed"], a: 1},
+                    {q: "Which of these is an Abiotic factor?", o: ["Predators", "Light intensity", "Bacteria"], a: 1},
+                    {q: "All the different species in an area make up a...", o: ["Population", "Community", "Ecosystem"], a: 1},
+                    {q: "What is the 'Niche' of an organism?", o: ["Its favorite food", "Its specific role in the ecosystem", "Its family tree"], a: 1},
+                    {q: "A group of the SAME species living in an area is a...", o: ["Population", "Community", "Biome"], a: 0},
+                    {q: "What happens if an abiotic factor like water disappears?", o: ["Only plants die", "The entire ecosystem is affected", "Nothing changes"], a: 1},
+                    {q: "Low light intensity in a forest is an...", o: ["Abiotic factor", "Biotic factor", "Artificial factor"], a: 0},
+                    {q: "True or False: An ecosystem includes non-living things.", o: ["True", "False"], a: 0},
+                    {q: "Why is soil pH important?", o: ["It's a biotic factor", "It affects which plants can grow", "It controls the weather"], a: 1}
+                ]
+            },
+            "B2_Summary": {
+                title: "B2 Summary: Ecosystems & Processes",
+                slides: [
+                    {h: "B2 Chapter Review", p: "You have mastered the two most important chemical reactions on Earth: Photosynthesis (storing energy) and Respiration (releasing energy)."},
+                    {h: "The Energy Cycle", p: "Energy enters ecosystems via sunlight, is captured by producers, and travels through food chains. However, 90% of energy is lost at each level as heat or waste."},
+                    {h: "Bioaccumulation Warning", p: "Remember that while energy decreases as you go up a food chain, toxins (pesticides) increase in concentration. This is bioamplification."},
+                    {h: "Abiotic vs Biotic", p: "Ecosystems are a balance. Biotic (living) and Abiotic (non-living) factors dictate which organisms survive in a specific niche."},
+                    {h: "Anaerobic vs Aerobic", p: "Aerobic respiration is the most efficient. Anaerobic is a 'backup plan' that produces lactic acid in humans or ethanol in yeast."}
+                ],
+                quiz: [
+                    {q: "What is the primary waste product of photosynthesis?", o: ["Carbon Dioxide", "Oxygen", "Glucose"], a: 1},
+                    {q: "Where does aerobic respiration take place?", o: ["Chloroplasts", "Mitochondria", "Nucleus"], a: 1},
+                    {q: "Which mineral is needed for green chlorophyll?", o: ["Nitrates", "Magnesium", "Potassium"], a: 1},
+                    {q: "What does 'Anaerobic' mean?", o: ["With light", "Without oxygen", "In a vacuum"], a: 1},
+                    {q: "Energy lost in a food chain is usually lost as...", o: ["Sugar", "Heat", "Light"], a: 1},
+                    {q: "Bioaccumulation affects which level the most?", o: ["Producers", "Primary Consumers", "Top Predators"], a: 2},
+                    {q: "An example of an abiotic factor is...", o: ["Predation", "Soil pH", "Fungal infection"], a: 1},
+                    {q: "Chemosynthesis uses... instead of light.", o: ["Heat", "Chemicals", "Electricity"], a: 1},
+                    {q: "Lactic acid is a product of...", o: ["Photosynthesis", "Anaerobic respiration", "Digestion"], a: 1},
+                    {q: "What is the start of every food chain?", o: ["A herbivore", "A producer", "The moon"], a: 1}
+                ]
+            },
+            "B3.1": {
+                title: "B3.1 Competition & Adaptation",
+                slides: [
+                    {h: "B3.1 Competition & Adaptation", p: "After this topic you will be able to describe the factors organisms compete for and explain how adaptations help them survive."},
+                    {h: "Competition", p: "Resources in an ecosystem are limited. Organisms must compete to survive. Plants compete for light, water, space, and minerals. Animals compete for food, water, mates, and territory."},
+                    {h: "Adaptations", p: "An adaptation is a characteristic that helps an organism survive in its environment. These can be structural (body parts), behavioral (actions), or functional (internal processes)."},
+                    {h: "Structural Adaptations", p: "Physical features like a polar bear's white fur (camouflage) and thick blubber (insulation), or a cactus's spines (protection/reduced water loss)."},
+                    {h: "Behavioral Adaptations", p: "Things organisms do to survive, such as bird migration to warmer climates or desert animals being nocturnal to avoid the daytime heat."},
+                    {h: "Survival of the Fittest", p: "Organisms with the best adaptations are more likely to win competitions, survive, and pass their traits to the next generation."}
+                ],
+                quiz: [
+                    {q: "What do plants primarily compete for?", o: ["Mates", "Light & Space", "Food"], a: 1},
+                    {q: "What do animals compete for that plants do not?", o: ["Water", "Space", "Mates"], a: 2},
+                    {q: "A polar bear's white fur is what kind of adaptation?", o: ["Behavioral", "Structural", "Functional"], a: 1},
+                    {q: "Why do desert animals often come out at night?", o: ["To see better", "To avoid heat", "To find mates"], a: 1},
+                    {q: "What is an adaptation?", o: ["A learned trick", "A trait that aids survival", "A type of disease"], a: 1},
+                    {q: "Cactus spines are adapted to...", o: ["Catch rain", "Reduce water loss & protect", "Attract bees"], a: 1},
+                    {q: "Competition occurs because resources are...", o: ["Unlimited", "Limited", "Not needed"], a: 1},
+                    {q: "Migration is an example of a...", o: ["Structural adaptation", "Behavioral adaptation", "Plant adaptation"], a: 1},
+                    {q: "Thick blubber helps an animal...", o: ["Stay cool", "Stay warm", "Swim faster"], a: 1},
+                    {q: "Winning a competition usually leads to...", o: ["Extinction", "Survival & Reproduction", "Hibernation"], a: 1}
+                ]
+            },
+            "B3.2": {
+                title: "B3.2 Adapting to Change",
+                slides: [
+                    {h: "B3.2 Adapting to Change", p: "After this topic you will be able to explain how changes in the environment affect populations and describe the causes of extinction."},
+                    {h: "Environmental Change", p: "Environments are not constant. Changes can be daily (tides), seasonal (winter), or long-term (climate change). Organisms must adapt to these changes to survive."},
+                    {h: "Natural Selection", p: "If an environment changes, individuals with helpful variations are more likely to survive. This 'selection pressure' drives evolution over many generations."},
+                    {h: "The Peppered Moth", p: "A famous example of rapid change. During the Industrial Revolution, soot turned trees black. Darker moths survived better than light ones because they were camouflaged from birds."},
+                    {h: "Endangered Species", p: "When a population falls so low that the species is at risk of disappearing, it is 'endangered.' Causes include habitat loss, new predators, or climate change."},
+                    {h: "Extinction", p: "If a species cannot adapt to a change or move to a new habitat, every member dies out. This is extinction. Factors include cataclysmic events, new diseases, or successful competitors."}
+                ],
+                quiz: [
+                    {q: "What happens if a species cannot adapt to a new environment?", o: ["It grows bigger", "It faces extinction", "It becomes a producer"], a: 1},
+                    {q: "The peppered moth changed color due to...", o: ["Diet changes", "Industrial pollution/camouflage", "Hotter weather"], a: 1},
+                    {q: "What is an 'endangered' species?", o: ["One that is very common", "One at risk of extinction", "A species that lives in a zoo"], a: 1},
+                    {q: "Which is a long-term environmental change?", o: ["Day and night", "Climate change", "The tide coming in"], a: 1},
+                    {q: "Species that survive change usually have...", o: ["Good luck", "Helpful adaptations", "No predators"], a: 1},
+                    {q: "What can cause a species to go extinct?", o: ["Loss of habitat", "A new deadly disease", "Both of these"], a: 2},
+                    {q: "The 'selection pressure' in the moth example was...", o: ["The temperature", "Predatory birds", "The wind"], a: 1},
+                    {q: "How can humans help endangered species?", o: ["By destroying forests", "Conservation and seed banks", "Introducing invasive species"], a: 1},
+                    {q: "If an environment changes slowly, a species is...", o: ["More likely to adapt", "Guaranteed to die", "Unchanged"], a: 0},
+                    {q: "True or False: Extinction is a permanent loss of a species.", o: ["True", "False"], a: 0}
+                ]
+            },
+            "B3.3": {
+                title: "B3.3 Variation",
+                slides: [
+                    {h: "B3.3 Variation", p: "After this topic you will be able to describe the differences between environmental and inherited variation and give examples of each."},
+                    {h: "What is Variation?", p: "Variation refers to the differences that exist between individuals of the same species. It is why you look different from your friends and even your siblings."},
+                    {h: "Inherited Variation", p: "These are traits passed from parents to offspring through genes during reproduction. Examples include eye color, natural hair color, blood group, and lobed or lobeless ears."},
+                    {h: "Environmental Variation", p: "These are differences caused by your surroundings and lifestyle. Examples include scars, tattoos, language spoken, or a tan from the sun."},
+                    {h: "Combined Variation", p: "Many traits are a mix of both. For example, your potential height is inherited from your parents, but whether you reach that height depends on your diet (environment)."},
+                    {h: "Continuous vs Discontinuous", p: "Discontinuous variation has distinct categories (e.g., Blood Group A, B, AB, or O). Continuous variation can be any value in a range (e.g., Height or Mass)."}
+                ],
+                quiz: [
+                    {q: "Which of these is purely inherited variation?", o: ["Scar", "Eye color", "Language"], a: 1},
+                    {q: "Which of these is purely environmental variation?", o: ["Blood group", "Tattoo", "Skin color"], a: 1},
+                    {q: "Height is an example of which variation type?", o: ["Inherited only", "Environmental only", "Both (Combined)"], a: 2},
+                    {q: "What is 'discontinuous' variation?", o: ["Measurements like weight", "Distinct categories", "Something that never stops"], a: 1},
+                    {q: "What carries the information for inherited traits?", o: ["Blood", "Genes/DNA", "Nerves"], a: 1},
+                    {q: "Which of these is 'continuous' variation?", o: ["Biological sex", "Body mass", "Eye color"], a: 1},
+                    {q: "A suntan is an example of...", o: ["Inherited variation", "Environmental variation", "A genetic mutation"], a: 1},
+                    {q: "Can environmental variation be passed to children?", o: ["Yes, always", "No", "Only if it's a tattoo"], a: 1},
+                    {q: "Identical twins have the same...", o: ["Environmental variation", "Inherited variation", "Scars"], a: 1},
+                    {q: "A bar chart is best for showing...", o: ["Continuous variation", "Discontinuous variation", "Both"], a: 1}
+                ]
+            },
+            "B3.4": {
+                title: "B3.4 Continuous vs Discontinuous",
+                slides: [
+                    {h: "B3.4 Continuous & Discontinuous", p: "After this topic you will be able to classify variation data and choose the correct graph to represent it."},
+                    {h: "Discontinuous Variation", p: "This is variation that can only result in specific, separate categories. There are no 'in-betweens'. Examples: Blood group, eye color, or whether you can roll your tongue."},
+                    {h: "Continuous Variation", p: "This is variation that can take any value within a range. It is usually measured with a number. Examples: Height, body mass, leaf length, or heart rate."},
+                    {h: "Graphing Discontinuous", p: "Since the data is in categories, we use a **Bar Chart**. The bars should usually have gaps between them to show the categories are distinct."},
+                    {h: "Graphing Continuous", p: "This data often follows a 'Normal Distribution' (a bell-shaped curve). We use a **Histogram** or a line graph to show the spread across the range."},
+                    {h: "Causes", p: "Discontinuous is usually caused by genes only. Continuous is usually caused by a combination of both genes and the environment."}
+                ],
+                quiz: [
+                    {q: "Which variation has no 'in-between' values?", o: ["Continuous", "Discontinuous", "Linear"], a: 1},
+                    {q: "Which of these is continuous variation?", o: ["Biological sex", "Arm span", "Blood group"], a: 1},
+                    {q: "Which graph is used for discontinuous variation?", o: ["Scatter graph", "Bar chart", "Pie chart only"], a: 1},
+                    {q: "Continuous variation data usually forms a...", o: ["Straight line", "Bell-shaped curve", "Square"], a: 1},
+                    {q: "Which of these is discontinuous?", o: ["Shoe size", "Hand span", "Intelligence"], a: 0},
+                    {q: "Continuous variation is often caused by...", o: ["Genes only", "Environment only", "Both Genes & Environment"], a: 2},
+                    {q: "In a bar chart for eye color, do the bars touch?", o: ["Yes", "No, they are separate categories"], a: 1},
+                    {q: "Weight is an example of...", o: ["Discontinuous", "Continuous"], a: 1},
+                    {q: "Can your height be exactly 155.67cm?", o: ["Yes (Continuous)", "No (Discontinuous)"], a: 0},
+                    {q: "Variation caused by genes only is usually...", o: ["Continuous", "Discontinuous"], a: 1}
+                ]
+            },
+            "B3.5": {
+                title: "B3.5 Inheritance",
+                slides: [
+                    {h: "B3.5 Inheritance", p: "After this topic you will be able to describe the relationship between DNA, genes, and chromosomes and explain how characteristics are inherited."},
+                    {h: "The Genetic Code", p: "Inside the nucleus of nearly every cell in your body is your genetic material. This is made of a molecule called DNA (Deoxyribonucleic Acid)."},
+                    {h: "Chromosomes", p: "DNA is packaged into long, coiled structures called chromosomes. Humans typically have 23 pairs (46 total) in each cell nucleus."},
+                    {h: "Genes", p: "A gene is a small section of DNA on a chromosome. Each gene contains the code for a specific characteristic, such as hair color or protein production."},
+                    {h: "Inheriting Traits", p: "During fertilization, you receive one set of 23 chromosomes from your mother's egg and one set of 23 from your father's sperm. This is why you share traits with both parents."},
+                    {h: "Alleles", p: "Genes can come in different versions called alleles. For example, you might have one allele for blue eyes and one for brown eyes."}
+                ],
+                quiz: [
+                    {q: "Where is genetic material stored in a cell?", o: ["Cytoplasm", "Nucleus", "Cell Wall"], a: 1},
+                    {q: "What is the long molecule that carries genetic code?", o: ["Protein", "DNA", "Glucose"], a: 1},
+                    {q: "How many pairs of chromosomes do humans have?", o: ["20", "23", "46"], a: 1},
+                    {q: "What is a 'gene'?", o: ["The whole nucleus", "A section of DNA", "A type of blood cell"], a: 1},
+                    {q: "What do we call different versions of the same gene?", o: ["Alleles", "Chromosomes", "Nucleotides"], a: 0},
+                    {q: "How many chromosomes are in a human sperm cell?", o: ["46", "23", "0"], a: 1},
+                    {q: "Which of these is the correct order (Smallest to Largest)?", o: ["Gene -> Chromosome -> Nucleus", "Nucleus -> Chromosome -> Gene"], a: 0},
+                    {q: "DNA is short for...", o: ["Deoxyribonucleic Acid", "Dinucleic Acid", "Digital Neural Asset"], a: 0},
+                    {q: "True or False: Identical twins have the same DNA.", o: ["True", "False"], a: 0},
+                    {q: "Half of your chromosomes come from your...", o: ["Mother", "Father", "Both (half from each)"], a: 2}
+                ]
+            },
+            "B3.6": {
+                title: "B3.6 Natural Selection",
+                slides: [
+                    {h: "B3.6 Natural Selection", p: "After this topic you will be able to explain the steps of natural selection and how it leads to evolution."},
+                    {h: "Charles Darwin", p: "The theory of evolution by natural selection was proposed by Charles Darwin after his famous voyage to the Galápagos Islands."},
+                    {h: "Step 1: Variation", p: "Individuals in a population show variation in their phenotypes (physical traits) caused by different alleles."},
+                    {h: "Step 2: Competition", p: "Organisms produce more offspring than can survive. They compete for limited resources (food, mates, space)."},
+                    {h: "Step 3: Survival of the Fittest", p: "Individuals with adaptations best suited to their environment are more likely to survive and reproduce."},
+                    {h: "Step 4: Inheritance", p: "The successful individuals pass on their 'advantageous alleles' to the next generation. Over time, these traits become more common."},
+                    {h: "Evolution", p: "Evolution is the gradual change in the inherited characteristics of a population over time, which may lead to the formation of new species."}
+                ],
+                quiz: [
+                    {q: "Who proposed the theory of Natural Selection?", o: ["Albert Einstein", "Charles Darwin", "Isaac Newton"], a: 1},
+                    {q: "What is the first requirement for natural selection?", o: ["Identical offspring", "Variation in the population", "Plenty of food"], a: 1},
+                    {q: "Why do some individuals die before reproducing?", o: ["They are unlucky", "They are less adapted to the environment", "They choose to"], a: 1},
+                    {q: "What is passed on to the offspring of survivors?", o: ["Scars", "Advantageous alleles (genes)", "Money"], a: 1},
+                    {q: "Natural selection is often called survival of the...", o: ["Strongest", "Fastest", "Fittest"], a: 2},
+                    {q: "What does 'Evolution' mean?", o: ["A quick change in one animal", "Gradual change in a population over time", "Animals turning into plants"], a: 1},
+                    {q: "What causes variation in a population?", o: ["Tattoos", "Genetic mutations and alleles", "Exercise"], a: 1},
+                    {q: "What happens to traits that do NOT help survival?", o: ["They become more common", "They eventually disappear", "They stay the same"], a: 1},
+                    {q: "How long does evolution usually take?", o: ["One day", "Many generations", "A few minutes"], a: 1},
+                    {q: "Darwin studied finches on which islands?", o: ["Hawaii", "Galápagos", "The British Isles"], a: 1}
+                ]
+            },
+            "B3.7": {
+                title: "B3.7 Extinction",
+                slides: [
+                    {h: "B3.7 Extinction", p: "After this topic you will be able to define extinction and identify the various factors that cause a species to disappear forever."},
+                    {h: "What is Extinction?", p: "Extinction occurs when there are no remaining individuals of a species left alive anywhere in the world. It is a natural process, but human activity has greatly accelerated it."},
+                    {h: "New Predators & Diseases", p: "If a new predator is introduced or a new disease evolves, a species may not have the adaptations to survive, leading to a rapid population crash."},
+                    {h: "Loss of Habitat", p: "Destruction of the environment (like deforestation or draining wetlands) removes the resources a species needs to survive, such as food, water, and shelter."},
+                    {h: "Catastrophic Events", p: "Mass extinctions in the past have been caused by huge physical changes, such as asteroid impacts (the dinosaurs) or massive volcanic eruptions."},
+                    {h: "Competition", p: "If a new, more successful competitor enters an ecosystem, it may take all the resources, leaving the original species to starve and die out."}
+                ],
+                quiz: [
+                    {q: "What does it mean when a species is 'extinct'?", o: ["It is hibernating", "No individuals are left alive", "It moved to a new country"], a: 1},
+                    {q: "Which of these is a biological cause of extinction?", o: ["Climate change", "A new predator", "Asteroid impact"], a: 1},
+                    {q: "What caused the mass extinction of the dinosaurs?", o: ["A new disease", "An asteroid impact", "Lack of exercise"], a: 1},
+                    {q: "How can humans cause extinction?", o: ["Habitat destruction", "Protecting forests", "Building seed banks"], a: 0},
+                    {q: "If a species cannot compete for food, it will...", o: ["Grow larger", "Eventually die out", "Turn into a plant"], a: 1},
+                    {q: "What is the 'fossil record' used for?", o: ["To predict the future", "To see evidence of extinct species", "To make fuel"], a: 1},
+                    {q: "True or False: Extinction is always caused by humans.", o: ["True", "False (it can be natural)"], a: 1},
+                    {q: "A new disease is most dangerous to...", o: ["Large populations", "Small, isolated populations", "Plants only"], a: 1},
+                    {q: "Why is habitat loss so damaging?", o: ["It removes food and shelter", "It makes the animals bored", "It changes the color of the sky"], a: 0},
+                    {q: "Once a species is extinct, can it ever return naturally?", o: ["Yes", "No, it is gone forever"], a: 1}
+                ]
+            },
+            "B3_Summary": {
+                title: "B3 Summary: Genetics & Evolution",
+                slides: [
+                    {h: "B3 Chapter Review", p: "You've explored how life changes over time. From the microscopic DNA in your cells to the global process of evolution and extinction."},
+                    {h: "Variation & Inheritance", p: "Variation is caused by genes (inherited) or the environment. DNA is organized into chromosomes, which contain genes—the instructions for your traits."},
+                    {h: "The Mechanism of Change", p: "Natural Selection is the process where the 'fittest' (best adapted) survive and pass on their alleles. Over many generations, this leads to Evolution."},
+                    {h: "Data in Biology", p: "We track variation using graphs. Discontinuous data (categories) uses bar charts, while Continuous data (ranges) uses histograms or line graphs."},
+                    {h: "The Finality of Extinction", p: "If a species cannot adapt to changes like new predators, climate change, or habitat loss, it faces extinction—the permanent loss of that species."}
+                ],
+                quiz: [
+                    {q: "Where are genes located?", o: ["In the cytoplasm", "On chromosomes", "In the cell membrane"], a: 1},
+                    {q: "Which variation type is 'Blood Group'?", o: ["Continuous", "Discontinuous"], a: 1},
+                    {q: "Who is the scientist associated with Evolution?", o: ["Gregor Mendel", "Charles Darwin", "Marie Curie"], a: 1},
+                    {q: "What is a 'structural' adaptation?", o: ["A behavior", "A physical body part", "A chemical process"], a: 1},
+                    {q: "What molecule is the genetic code made of?", o: ["Glucose", "DNA", "Amino Acids"], a: 1},
+                    {q: "Survival of the Fittest means survival of those...", o: ["Strongest", "Best adapted to environment", "Luckiest"], a: 1},
+                    {q: "What causes variation to be 'Combined'?", o: ["Both Genes & Environment", "Only Mutations", "Only Sunlight"], a: 0},
+                    {q: "What is an 'allele'?", o: ["A type of bird", "A version of a gene", "A part of the lung"], a: 1},
+                    {q: "How many chromosomes in a normal human body cell?", o: ["23", "46", "92"], a: 1},
+                    {q: "If a species fails to adapt, it may become...", o: ["Endangered then Extinct", "A new species", "Invincible"], a: 0}
+                ]
+            },
+            "C1.1": {
+                title: "C1.1 Metals & Non-metals",
+                slides: [
+                    {h: "C1.1 Metals & Non-metals", p: "After this topic you will be able to identify the positions of metals and non-metals on the periodic table and compare their physical properties."},
+                    {h: "The Periodic Table Divide", p: "The periodic table is organized so that metals are found on the left and in the center. Non-metals are found on the far right (separated by a 'staircase' of metalloids)."},
+                    {h: "Physical Properties of Metals", p: "Metals are generally: 1. Shiny (lustrous), 2. High melting points, 3. Good conductors of heat and electricity, 4. Malleable (can be hammered into shape), and 5. Ductile (can be drawn into wires)."},
+                    {h: "Physical Properties of Non-metals", p: "Non-metals are generally: 1. Dull, 2. Low melting points, 3. Poor conductors (insulators), and 4. Brittle (shatter when hit)."},
+                    {h: "State at Room Temperature", p: "Most metals are solids at room temperature (except Mercury). Many non-metals are gases (like Oxygen) or solids (like Carbon), and one is liquid (Bromine)."},
+                    {h: "Density", p: "Metals usually have a high density (they feel heavy for their size) because their atoms are packed very closely together. Non-metals usually have low densities."}
+                ],
+                quiz: [
+                    {q: "Where are metals found on the periodic table?", o: ["On the right", "On the left and center", "Only at the bottom"], a: 1},
+                    {q: "Which property describes a material that can be hammered into shape?", o: ["Ductile", "Malleable", "Brittle"], a: 1},
+                    {q: "Most non-metals are poor conductors, also known as...", o: ["Capacitors", "Insulators", "Metalloids"], a: 1},
+                    {q: "Which metal is a liquid at room temperature?", o: ["Iron", "Mercury", "Copper"], a: 1},
+                    {q: "Non-metals in the solid state are usually...", o: ["Strong", "Brittle", "Flexible"], a: 1},
+                    {q: "What does 'lustrous' mean?", o: ["Dull", "Shiny", "Heavy"], a: 1},
+                    {q: "Which is a characteristic of most non-metals?", o: ["High melting point", "Low melting point", "Conducts electricity"], a: 1},
+                    {q: "Metals are 'ductile', meaning they can be...", o: ["Hammered flat", "Drawn into wires", "Melted easily"], a: 1},
+                    {q: "An element that is dull and shatters when hit is likely a...", o: ["Metal", "Non-metal", "Alloy"], a: 1},
+                    {q: "The 'staircase' line on the periodic table separates...", o: ["Gases and Solids", "Metals and Non-metals", "Large and Small atoms"], a: 1}
+                ]
+            },
+            "C1.2": {
+            title: "C1.2 Groups and Periods",
+            slides: [
+                {h: "C1.2 Groups and Periods", p: "After this topic you will be able to explain how the periodic table is organized into horizontal rows and vertical columns."},
+                {h: "Vertical Columns (Groups)", p: "Groups are the vertical columns in the periodic table. Elements in the same group have similar chemical properties because they have the same number of electrons in their outer shell."},
+                {h: "Horizontal Rows (Periods)", p: "Periods are the horizontal rows. As you move across a period, the properties of the elements change significantly, moving from highly reactive metals on the left to unreactive non-metals on the right."},
+                {h: "Atomic Number", p: "Elements are arranged in order of increasing atomic number (the number of protons in the nucleus). No two elements have the same atomic number."},
+                {h: "Patterns", p: "Group 1 elements are the Alkali Metals. Group 7 are the Halogens. Group 0 (or 8) are the Noble Gases. The middle block contains Transition Metals."}
+            ],
+            quiz: [
+                {q: "What is a vertical column called?", o: ["Period", "Group", "Block"], a: 1},
+                {q: "What is a horizontal row called?", o: ["Period", "Group", "Aisle"], a: 0},
+                {q: "Elements in the same group usually have...", o: ["Same mass", "Similar properties", "Same name"], a: 1},
+                {q: "How are elements ordered in the table?", o: ["By discovery date", "By atomic number", "Alphabetically"], a: 1},
+                {q: "Which group contains the Noble Gases?", o: ["Group 1", "Group 7", "Group 0"], a: 2},
+                {q: "As you move across a period, elements change from...", o: ["Metal to Non-metal", "Gas to Solid", "Dull to Shiny"], a: 0},
+                {q: "What does the group number tell you?", o: ["Number of protons", "Electrons in outer shell", "Number of shells"], a: 1},
+                {q: "What is the atomic number of Hydrogen?", o: ["0", "1", "2"], a: 1},
+                {q: "Where are the Transition Metals?", o: ["Far left", "The middle block", "Far right"], a: 1},
+                {q: "True or False: Gold and Silver are in the same period.", o: ["True", "False"], a: 1}
+            ]
+        },
+        "C1.3": {
+            title: "C1.3 The Elements of Group 1",
+            slides: [
+                {h: "C1.3 Group 1: Alkali Metals", p: "After this topic you will be able to describe the properties of Group 1 elements and how they react with water."},
+                {h: "The Alkali Metals", p: "Group 1 contains Lithium (Li), Sodium (Na), Potassium (K), Rubidium (Rb), Caesium (Cs), and Francium (Fr). They are extremely reactive and must be stored under oil."},
+                {h: "Physical Properties", p: "Unlike most metals, Group 1 metals are soft enough to be cut with a knife, have low melting points, and have low densities (Li, Na, and K float on water)."},
+                {h: "Reaction with Water", p: "Metal + Water -> Metal Hydroxide + Hydrogen gas. Observations: They fizz, move on the surface, and eventually disappear. Potassium produces a lilac flame."},
+                {h: "Reactivity Trend", p: "As you go DOWN the group, the elements become MORE reactive. This is because the outer electron is further from the nucleus and easier to lose."},
+                {h: "Chemical Products", p: "The reaction with water creates an alkaline solution (pH > 7), which turns universal indicator purple or blue."}
+            ],
+            quiz: [
+                {q: "Which of these is a Group 1 metal?", o: ["Iron", "Sodium", "Gold"], a: 1},
+                {q: "Why are they stored under oil?", o: ["To keep them shiny", "To prevent reaction with air/water", "To make them slippery"], a: 1},
+                {q: "Which gas is produced when they react with water?", o: ["Oxygen", "Hydrogen", "Carbon Dioxide"], a: 1},
+                {q: "What happens to reactivity as you go down Group 1?", o: ["Increases", "Decreases", "Stays the same"], a: 0},
+                {q: "What color flame does Potassium produce in water?", o: ["Yellow", "Lilac", "Green"], a: 1},
+                {q: "Group 1 metals are unusually...", o: ["Hard", "Soft", "Dense"], a: 1},
+                {q: "What is the pH of the solution after the reaction?", o: ["Acidic (<7)", "Neutral (7)", "Alkaline (>7)"], a: 2},
+                {q: "Which is the least reactive of these three?", o: ["Lithium", "Sodium", "Potassium"], a: 0},
+                {q: "What do Li, Na, and K do on water?", o: ["Sink", "Float", "Dissolve instantly without reaction"], a: 1},
+                {q: "The word 'Alkali' refers to the fact that they...", o: ["Are metals", "Form basic/alkaline solutions", "Are rare"], a: 1}
+            ]
+        },
+        "C1.4": {
+            title: "C1.4 The Elements of Group 7",
+            slides: [
+                {h: "C1.4 Group 7: The Halogens", p: "After this topic you will be able to describe the properties of Group 7 elements and the patterns in their reactivity."},
+                {h: "The Halogens", p: "Group 7 contains Fluorine (F), Chlorine (Cl), Bromine (Br), and Iodine (I). They are non-metals that exist as diatomic molecules (pairs of atoms, like Cl2)."},
+                {h: "Physical States", p: "As you go down the group, melting and boiling points increase. Fluorine/Chlorine are gases, Bromine is a liquid, and Iodine is a solid."},
+                {h: "Reactivity Trend", p: "Unlike Group 1, reactivity DECREASES as you go down Group 7. Fluorine is the most reactive; Iodine is much less so."},
+                {h: "Displacement Reactions", p: "A more reactive halogen will 'push out' (displace) a less reactive halogen from its compound. Example: Chlorine + Potassium Iodide -> Potassium Chloride + Iodine."},
+                {h: "Safety", p: "Halogens are toxic and have strong smells. They are often used as disinfectants (Chlorine in pools) or antiseptics (Iodine on wounds)."}
+            ],
+            quiz: [
+                {q: "What is the collective name for Group 7?", o: ["Alkali Metals", "Noble Gases", "Halogens"], a: 2},
+                {q: "How many atoms are in a halogen molecule (e.g. Cl2)?", o: ["1", "2", "3"], a: 1},
+                {q: "Which halogen is a liquid at room temperature?", o: ["Chlorine", "Bromine", "Iodine"], a: 1},
+                {q: "What happens to reactivity as you go down Group 7?", o: ["Increases", "Decreases", "Stays the same"], a: 1},
+                {q: "Which is the most reactive halogen?", o: ["Fluorine", "Chlorine", "Iodine"], a: 0},
+                {q: "What is a 'displacement' reaction?", o: ["A halogen melting", "A more reactive element taking the place of a less reactive one", "Elements exploding"], a: 1},
+                {q: "What happens to the melting point as you go down the group?", o: ["Increases", "Decreases", "Stays the same"], a: 0},
+                {q: "Chlorine is commonly used for...", o: ["Fuel", "Sterilizing water", "Jewelry"], a: 1},
+                {q: "What color is Iodine vapor?", o: ["Green", "Purple", "Brown"], a: 1},
+                {q: "Chlorine + Sodium Bromide -> ?", o: ["No reaction", "Sodium Chloride + Bromine", "Sodium + Chlorine Bromide"], a: 1}
+            ]
+        },
+        "C1.5": {
+            title: "C1.5 The Elements of Group 0",
+            slides: [
+                {h: "C1.5 Group 0: The Noble Gases", p: "After this topic you will be able to explain why Group 0 elements are unreactive and describe their uses."},
+                {h: "The Noble Gases", p: "Group 0 (sometimes called Group 8) includes Helium (He), Neon (Ne), Argon (Ar), and Krypton (Kr). They are all colorless gases at room temperature."},
+                {h: "Chemical Inertness", p: "Noble gases are 'inert', meaning they are extremely unreactive. This is because they have a full outer shell of electrons and do not need to gain or lose any."},
+                {h: "Density Patterns", p: "The density of the gases increases as you go down the group. Helium is much less dense than air (which is why balloons float)."},
+                {h: "Boiling Points", p: "They have very low boiling points, but like Group 7, the boiling points increase as you go down the group."},
+                {h: "Common Uses", p: "Helium: Balloons/Airships. Neon: Glowing signs. Argon: Inside lightbulbs (to prevent the filament burning) and 3D printing."}
+            ],
+            quiz: [
+                {q: "Why are Noble Gases unreactive?", o: ["They are too heavy", "They have full outer electron shells", "They are cold"], a: 1},
+                {q: "What is another name for 'unreactive'?", o: ["Inert", "Reactive", "Ductile"], a: 0},
+                {q: "Which gas is used in floating balloons?", o: ["Argon", "Neon", "Helium"], a: 2},
+                {q: "What is the state of all Group 0 elements at room temp?", o: ["Solid", "Liquid", "Gas"], a: 2},
+                {q: "As you go down Group 0, the boiling point...", o: ["Increases", "Decreases", "Stays the same"], a: 0},
+                {q: "Which gas is used in orange-red glowing signs?", o: ["Krypton", "Neon", "Helium"], a: 1},
+                {q: "Noble gases exist as single atoms, called...", o: ["Diatomic", "Monatomic", "Polyatomic"], a: 1},
+                {q: "Argon is used in lightbulbs because...", o: ["It's cheap", "It won't react with the hot filament", "It's very bright"], a: 1},
+                {q: "Which is the heaviest (most dense) of these three?", o: ["Helium", "Neon", "Argon"], a: 2},
+                {q: "True or False: Noble gases are flammable.", o: ["True", "False"], a: 1}
+            ]
+        },
+        "C1_Summary": {
+            title: "C1 Summary: The Periodic Table",
+            slides: [
+                {h: "C1 Chapter Review", p: "You've mastered the basics of the Periodic Table, the ultimate map of chemistry."},
+                {h: "Metals vs. Non-metals", p: "Metals (left) are shiny and conduct. Non-metals (right) are dull and insulate. The 'staircase' separates them."},
+                {h: "The Reactive Ends", p: "Group 1 (Alkali Metals) get more reactive as you go down. Group 7 (Halogens) get less reactive as you go down."},
+                {h: "Stability", p: "Group 0 (Noble Gases) are the most stable elements because of their full electron shells. They rarely form compounds."},
+                {h: "Atomic Organization", p: "Remember: Periods are rows, Groups are columns. Elements are arranged by Atomic Number (protons)."}
+            ],
+            quiz: [
+                {q: "What is a horizontal row in the table called?", o: ["Group", "Period", "Lane"], a: 1},
+                {q: "Group 1 metals react with water to make...", o: ["Acid", "Alkali + Hydrogen", "Oxygen"], a: 1},
+                {q: "Which property is typical of a metal?", o: ["Brittle", "Malleable", "Poor conductor"], a: 1},
+                {q: "What happens to halogen reactivity moving down?", o: ["Increases", "Decreases", "Stays the same"], a: 1},
+                {q: "Which group is known as the Noble Gases?", o: ["Group 1", "Group 7", "Group 0"], a: 2},
+                {q: "Potassium + Water produces what color flame?", o: ["Orange", "Lilac", "Blue"], a: 1},
+                {q: "Fluorine, Chlorine, and Bromine are...", o: ["Metals", "Halogens", "Noble Gases"], a: 1},
+                {q: "Most elements in the periodic table are...", o: ["Metals", "Non-metals", "Liquids"], a: 0},
+                {q: "Which gas is produced by Alkali metals in water?", o: ["CO2", "Oxygen", "Hydrogen"], a: 2},
+                {q: "Elements in the same group have similar...", o: ["Masses", "Chemical properties", "Colors"], a: 1}
+            ]
+        },
+        "C2.1": {
+            title: "C2.1 Mixtures",
+            slides: [
+                {h: "C2.1 Mixtures", p: "A mixture contains two or more substances that are NOT chemically joined. Because there are no chemical bonds, the substances keep their own properties and can be easily separated."},
+                {h: "Pure vs. Impure", p: "A **pure substance** consists of only one type of element or compound (e.g., distilled water). It has a fixed, sharp melting and boiling point."},
+                {h: "Impure Substances", p: "A mixture is an **impure substance**. Mixtures do not have a sharp melting point; instead, they melt or boil over a range of temperatures (e.g., salt water or air)."},
+                {h: "Types of Mixtures", p: "Mixtures can be 'homogeneous' (uniform throughout, like air) or 'heterogeneous' (distinct parts, like a bowl of cereal or muddy water)."},
+                {h: "Separation Energy", p: "Since mixtures are held by physical forces, separating them requires physical energy (heat, movement, or size exclusion) rather than chemical reactions."}
+            ],
+            quiz: [
+                {q: "How are substances in a mixture held together?", o: ["Strong chemical bonds", "They are not chemically joined", "Magnetic force"], a: 1},
+                {q: "Which of these is a pure substance?", o: ["Sea water", "Distilled water", "Air"], a: 1},
+                {q: "What happens to the boiling point of a mixture?", o: ["It stays the same", "It occurs over a range of temperatures", "It vanishes"], a: 1},
+                {q: "Which is an example of a mixture of gases?", o: ["Pure Oxygen", "Air", "Carbon Dioxide"], a: 1},
+                {q: "Can a mixture be separated by physical means?", o: ["Yes", "No"], a: 0},
+                {q: "What is a 'homogeneous' mixture?", o: ["Uniform throughout", "Clumpy", "A solid only"], a: 0},
+                {q: "Which temperature would suggest a substance is IMPURE?", o: ["Boils at exactly 100°C", "Boils between 102°C and 105°C", "Melts at exactly 0°C"], a: 1},
+                {q: "Is orange juice with pulp a mixture?", o: ["Yes", "No"], a: 0},
+                {q: "In a mixture, do the substances lose their properties?", o: ["Yes", "No, they stay the same"], a: 1},
+                {q: "Alloys like brass are mixtures of...", o: ["Gases", "Metals", "Liquids"], a: 1}
+            ]
+        },
+        "C2.2": {
+            title: "C2.2 Solutions",
+            slides: [
+                {h: "C2.2 Solutions", p: "A solution is a special type of mixture formed when a solid (the **solute**) dissolves into a liquid (the **solvent**)."},
+                {h: "The Dissolving Process", p: "When a solute dissolves, its particles break apart and fill the gaps between solvent particles. This is a physical change, not a chemical one."},
+                {h: "Conservation of Mass", p: "Mass is always conserved. If you dissolve 5g of sugar in 100g of water, the final solution will weigh exactly 105g."},
+                {h: "Transparency", p: "Solutions are usually transparent (see-through), even if they are colored (like copper sulfate solution). If it is cloudy, it is a suspension."},
+                {h: "Dilute vs Concentrated", p: "A dilute solution has very little solute compared to the solvent. A concentrated solution has a large amount of solute particles packed in."}
+            ],
+            quiz: [
+                {q: "In a sugar solution, what is the 'solvent'?", o: ["The sugar", "The water", "The heat"], a: 1},
+                {q: "The solid that dissolves is called the...", o: ["Solute", "Solvent", "Solution"], a: 0},
+                {q: "If 10g of salt is dissolved in 50g of water, what is the total mass?", o: ["40g", "50g", "60g"], a: 2},
+                {q: "What does 'transparent' mean in a solution?", o: ["It is colorless", "You can see through it", "It is cloudy"], a: 1},
+                {q: "If a substance dissolves in water, we say it is...", o: ["Insoluble", "Soluble", "Saturated"], a: 1},
+                {q: "Dissolving is what type of change?", o: ["Chemical", "Physical"], a: 1},
+                {q: "Why does the solute seem to disappear?", o: ["It turns into energy", "It fits between solvent particles", "It evaporates"], a: 1},
+                {q: "What is a 'suspension'?", o: ["A clear solution", "A mixture with floating insoluble particles", "A pure gas"], a: 1},
+                {q: "A solution with very little solute is...", o: ["Concentrated", "Dilute", "Saturated"], a: 1},
+                {q: "Can you recover the solute from a solution?", o: ["No, it's gone", "Yes, by evaporating the solvent", "Yes, by filtering it"], a: 1}
+            ]
+        },
+        "C2.3": {
+            title: "C2.3 Solubility",
+            slides: [
+                {h: "C2.3 Solubility", p: "Solubility is a measure of how much of a solute can dissolve in a fixed volume of solvent at a specific temperature."},
+                {h: "Saturated Solutions", p: "A solution is **saturated** when no more solute can dissolve. If you add more, it will simply settle at the bottom."},
+                {h: "Temperature and Solubility", p: "For most solids, solubility **increases** as the temperature increases. Heat gives particles more energy to move and create space."},
+                {h: "Solubility Curves", p: "A graph showing how solubility changes with temperature. We use these to predict how much solid will crystallize out if a solution is cooled."},
+                {h: "Factors Affecting Speed", p: "Stirring, heating, and using smaller solute particles (larger surface area) all make a substance dissolve faster, but they don't always change the total solubility."}
+            ],
+            quiz: [
+                {q: "What is a saturated solution?", o: ["A solution that is boiling", "One where no more solute can dissolve", "A very dilute solution"], a: 1},
+                {q: "How does increasing temperature affect the solubility of most solids?", o: ["It increases", "It decreases", "It stays the same"], a: 0},
+                {q: "Solubility is usually measured as grams of solute per...", o: ["10g of solvent", "100g of solvent", "1kg of solvent"], a: 1},
+                {q: "If you cool a saturated solution, what usually happens?", o: ["More dissolves", "Crystals start to form", "It turns into a gas"], a: 1},
+                {q: "A substance that does not dissolve is called...", o: ["Soluble", "Insoluble", "A solvent"], a: 1},
+                {q: "Which would dissolve faster?", o: ["Large salt crystals", "Fine salt powder", "Both the same"], a: 1},
+                {q: "Does stirring increase the TOTAL amount that can dissolve?", o: ["Yes", "No, just the speed"], a: 1},
+                {q: "On a solubility curve, what does the line represent?", o: ["A dilute solution", "A saturated solution", "An insoluble substance"], a: 1},
+                {q: "What happens to the solubility of GASES as temperature increases?", o: ["Increases", "Decreases", "Stays the same"], a: 1},
+                {q: "What is the unit for temperature on a solubility graph?", o: ["Grams", "Degrees Celsius", "Liters"], a: 1}
+            ]
+        },
+        "C2.4": {
+            title: "C2.4 Filtration",
+            slides: [
+                {h: "C2.4 Filtration", p: "Filtration is a technique used to separate an **insoluble** solid from a liquid. It works because the liquid particles are small enough to pass through the pores in the filter paper, but the solid particles are too large."},
+                {h: "The Apparatus", p: "You need a filter funnel, filter paper, and a conical flask. The mixture is poured into the funnel, and gravity pulls the liquid through."},
+                {h: "Residue and Filtrate", p: "The solid that stays on the paper is called the **residue**. The clear liquid that passes through into the flask is called the **filtrate**."},
+                {h: "Practical Application", p: "We use filtration in everyday life, such as in coffee machines, sand filters for swimming pools, and even our kidneys (to filter blood)."},
+                {h: "Limitations", p: "Filtration cannot separate **soluble** substances (like salt) from water because those particles are small enough to pass through the paper with the water."}
+            ],
+            quiz: [
+                {q: "Filtration separates which type of substance from a liquid?", o: ["Soluble solid", "Insoluble solid", "Another liquid"], a: 1},
+                {q: "What is the solid left on the filter paper called?", o: ["Filtrate", "Residue", "Solute"], a: 1},
+                {q: "What is the liquid that passes through the paper called?", o: ["Filtrate", "Residue", "Solvent"], a: 0},
+                {q: "Why does the solid stay on the paper?", o: ["It sticks to it", "The particles are too large", "It is magnetic"], a: 1},
+                {q: "Which of these mixtures can be separated by filtration?", o: ["Salt and water", "Sand and water", "Sugar and tea"], a: 1},
+                {q: "Which piece of equipment holds the filter paper?", o: ["Beaker", "Funnel", "Tripod"], a: 1},
+                {q: "Can filtration separate salt from sea water?", o: ["Yes", "No, salt is soluble"], a: 1},
+                {q: "In a lab, what usually holds the funnel?", o: ["A clamp stand", "The teacher", "The sink"], a: 0},
+                {q: "Which organ in the human body acts as a filter?", o: ["Heart", "Kidney", "Lungs"], a: 1},
+                {q: "The tiny holes in filter paper are called...", o: ["Gaps", "Pores", "Vents"], a: 1}
+            ]
+        },
+        "C2.5": {
+            title: "C2.5 Evaporation & Distillation",
+            slides: [
+                {h: "C2.5 Evaporation", p: "Evaporation is used to separate a **soluble** solid from a liquid. The liquid is heated until it turns into a gas (vapor), leaving the solid crystals behind."},
+                {h: "Crystallisation", p: "If you evaporate the solvent slowly, you get larger, more regular crystals. This is often called crystallisation."},
+                {h: "Simple Distillation", p: "Distillation is used when we want to keep the liquid. The liquid is boiled to create steam, which then travels through a cooling tube (condenser) to turn back into a liquid."},
+                {h: "The Condenser", p: "A **Liebig Condenser** has a central tube for steam and an outer 'jacket' of cold running water. This ensures the gas cools down quickly and turns back into a liquid (distillate)."},
+                {h: "Boiling Points", p: "Distillation relies on different substances having different boiling points. The substance with the lowest boiling point evaporates first."},
+                {h: "Fractional Distillation", p: "A more complex version used to separate multiple liquids (like crude oil) using a fractionating column."}
+            ],
+            quiz: [
+                {q: "Which method is best if you want to keep the SOLVENT (liquid)?", o: ["Evaporation", "Distillation", "Filtration"], a: 1},
+                {q: "In distillation, what is the name of the cooling tube?", o: ["Funnel", "Condenser", "Burette"], a: 1},
+                {q: "What happens in the condenser?", o: ["Liquid turns to gas", "Gas turns to liquid", "Solid melts"], a: 1},
+                {q: "Evaporation separates a... solid from a liquid.", o: ["Insoluble", "Soluble", "Magnetic"], a: 1},
+                {q: "What is the liquid collected at the end of distillation called?", o: ["Residue", "Distillate", "Solute"], a: 1},
+                {q: "Where does the cold water enter a Liebig condenser?", o: ["At the top", "At the bottom", "In the middle"], a: 1},
+                {q: "Distillation works because substances have different...", o: ["Colors", "Boiling points", "Densities"], a: 1},
+                {q: "What is left in the evaporating dish after heating salt water?", o: ["Water", "Salt crystals", "Nothing"], a: 1},
+                {q: "To get large crystals, you should evaporate the liquid...", o: ["Quickly", "Slowly", "Not at all"], a: 1},
+                {q: "Anti-bumping granules are used in distillation to...", o: ["Make it change color", "Make the boiling smoother", "Stop it smelling"], a: 1}
+            ]
+        },
+        "C2.6": {
+            title: "C2.6 Chromatography",
+            slides: [
+                {h: "C2.6 Chromatography", p: "Chromatography is used to separate mixtures of colored substances, such as inks, food dyes, or plant pigments."},
+                {h: "How it Works", p: "A spot of the mixture is placed on chromatography paper. The paper is dipped in a solvent (like water). As the solvent moves up, it carries the dyes with it."},
+                {h: "Solubility and Speed", p: "Dyes that are **more soluble** in the solvent travel further and faster. Dyes that are less soluble stay closer to the bottom."},
+                {h: "The Start Line", p: "Always draw the start line in **pencil**. Pencil lead (graphite) is insoluble and won't move. If you used pen, the ink would travel up the paper and ruin the experiment."},
+                {h: "Pure vs Mixture", p: "A pure substance will only produce **one spot**. A mixture will separate into multiple spots of different colors."},
+                {h: "The Rf Value", p: "A ratio used to identify substances. $Rf = \frac{distance\ travelled\ by\ substance}{distance\ travelled\ by\ solvent}$."}
+            ],
+            quiz: [
+                {q: "What does chromatography separate?", o: ["Solids from liquids", "Colored mixtures", "Gases"], a: 1},
+                {q: "Why is the start line drawn in pencil?", o: ["It's cheaper", "Pencil is insoluble", "It's darker"], a: 1},
+                {q: "How many spots will a pure substance produce?", o: ["One", "Two", "Many"], a: 0},
+                {q: "The 'Mobile Phase' in paper chromatography is the...", o: ["Paper", "Solvent", "Pencil line"], a: 1},
+                {q: "A dye that stays on the start line is...", o: ["Very soluble", "Insoluble", "The fastest"], a: 1},
+                {q: "The 'Stationary Phase' is the...", o: ["Paper", "Water", "Ink"], a: 0},
+                {q: "If a spot travels 4cm and the water travels 8cm, what is the Rf?", o: ["2.0", "0.5", "32"], a: 1},
+                {q: "What should the solvent level be at the start?", o: ["Above the pencil line", "Below the pencil line", "Touching the ink spot"], a: 1},
+                {q: "Which dye is the MOST soluble?", o: ["The one that moved the least", "The one that moved the most", "The pencil line"], a: 1},
+                {q: "Chromatography can be used to check for...", o: ["Banned food dyes", "Water temperature", "Room pressure"], a: 0}
+            ]
+        },
+        "C2_Summary": {
+            title: "C2 Summary: Separating Mixtures",
+            slides: [
+                {h: "C2 Chapter Review", p: "You've learned that mixtures are physical combinations that can be reversed using the right technique."},
+                {h: "The Selection Guide", p: "1. Insoluble solid? Use **Filtration**. 2. Soluble solid? Use **Evaporation**. 3. Pure liquid from a solution? Use **Distillation**. 4. Multiple dyes? Use **Chromatography**."},
+                {h: "Key Vocabulary", p: "Solute, Solvent, Solution, Solubility, Saturated, Residue, Filtrate, Distillate, Chromatogram."},
+                {h: "Pure vs Impure", p: "Pure substances have sharp melting/boiling points. Mixtures show a range of temperatures during state changes."},
+                {h: "Mass Conservation", p: "In all these physical processes, the total mass of the substances remains the same; they are simply moved or rearranged."}
+            ],
+            quiz: [
+                {q: "Which technique uses a Liebig Condenser?", o: ["Filtration", "Distillation", "Evaporation"], a: 1},
+                {q: "What is a 'pure' substance in chemistry?", o: ["Filtered water", "Only one type of atom or molecule", "Anything clear"], a: 1},
+                {q: "To separate sand from salt, which two methods are needed?", o: ["Filtration and Distillation", "Dissolving and Filtration", "Chromatography and Evaporation"], a: 1},
+                {q: "If a solution is 'saturated', it means...", o: ["It is boiling", "No more solute can dissolve", "It is very dilute"], a: 1},
+                {q: "Rf values in chromatography are always...", o: ["Greater than 1", "Less than 1", "Exactly 1"], a: 1},
+                {q: "What happens to most solids' solubility as you heat them?", o: ["Decreases", "Increases", "Stays the same"], a: 1},
+                {q: "Which is the solvent in a cup of tea?", o: ["The tea leaf", "The water", "The sugar"], a: 1},
+                {q: "What is the filtrate?", o: ["The solid in the paper", "The liquid that passes through", "The gas produced"], a: 1},
+                {q: "Why is sea water a mixture?", o: ["It is wet", "The salt and water aren't chemically bonded", "It has fish in it"], a: 1},
+                {q: "Chromatography separates dyes based on their...", o: ["Boiling point", "Solubility", "Magnetism"], a: 1}
+            ]
+        },
+        "C3.1": {
+            title: "C3.1 Acids and Metals",
+            slides: [
+                {h: "C3.1 Acids and Metals", p: "When a metal reacts with an acid, it produces a salt and hydrogen gas. The general equation is: Metal + Acid -> Salt + Hydrogen."},
+                {h: "The Hydrogen Test", p: "We test for hydrogen using a 'squeaky pop' test. Hold a lit splint at the mouth of the test tube; if hydrogen is present, it ignites with a characteristic 'pop'."},
+                {h: "Naming Salts", p: "The name of the salt depends on the acid used: Hydrochloric acid makes **Chlorides**, Sulfuric acid makes **Sulfates**, and Nitric acid makes **Nitrates**."},
+                {h: "Observations", p: "During the reaction, you will see bubbles (effervescence) as the gas is produced, and the metal will slowly disappear as it turns into a soluble salt."}
+            ],
+            quiz: [
+                {q: "Metal + Acid -> Salt + ...?", o: ["Water", "Oxygen", "Hydrogen"], a: 2},
+                {q: "What is the test for Hydrogen gas?", o: ["Limewater", "Squeaky pop test", "Glowing splint"], a: 1},
+                {q: "Which salt is made using Sulfuric Acid?", o: ["Magnesium Chloride", "Magnesium Sulfate", "Magnesium Nitrate"], a: 1},
+                {q: "What does 'effervescence' mean?", o: ["Changing color", "Fizzing/Bubbles", "Turning solid"], a: 1},
+                {q: "Which metal would react most violently with acid?", o: ["Copper", "Iron", "Magnesium"], a: 2},
+                {q: "What happens to the temperature during these reactions?", o: ["Increases (Exothermic)", "Decreases (Endothermic)"], a: 0},
+                {q: "Hydrochloric acid makes salts called...", o: ["Sulfates", "Chlorides", "Nitrates"], a: 1},
+                {q: "If 2g of metal reacts and disappears, where did it go?", o: ["It was destroyed", "It turned into a soluble salt", "It turned into gas"], a: 1},
+                {q: "Does Copper react with dilute Hydrochloric acid?", o: ["Yes, rapidly", "No, it is too unreactive"], a: 1},
+                {q: "What is the salt produced by Zinc + Sulfuric Acid?", o: ["Zinc Chloride", "Zinc Sulfate", "Zinc Oxide"], a: 1}
+            ]
+        },
+        "C3.2": {
+            title: "C3.2 Metals and Oxygen",
+            slides: [
+                {h: "C3.2 Metals and Oxygen", p: "Most metals react with oxygen to form metal oxides. The general equation is: Metal + Oxygen -> Metal Oxide."},
+                {h: "Oxidation", p: "This is an oxidation reaction because the metal gains oxygen atoms. For example, when Magnesium burns, it forms a white powder called Magnesium Oxide."},
+                {h: "Rusting", p: "Rusting is a specific type of oxidation that only happens to Iron. It requires both **Oxygen** and **Water** to occur."},
+                {h: "Mass Change", p: "In these reactions, the mass of the solid increases because oxygen atoms from the air are being added to the metal."}
+            ],
+            quiz: [
+                {q: "Metal + Oxygen -> ...?", o: ["Metal Hydroxide", "Metal Oxide", "Metal Carbonate"], a: 1},
+                {q: "Gaining oxygen in a reaction is called...", o: ["Reduction", "Oxidation", "Neutralization"], a: 1},
+                {q: "What color is the flame when Magnesium burns?", o: ["Blue", "Bright White", "Lilac"], a: 1},
+                {q: "Iron + Oxygen + Water -> ...?", o: ["Iron Oxide (Rust)", "Iron Sulfate", "Steel"], a: 0},
+                {q: "What happens to the mass of a metal after it burns?", o: ["Decreases", "Increases", "Stays the same"], a: 1},
+                {q: "Which of these is a way to prevent rusting?", o: ["Adding water", "Painting the metal", "Scratched surface"], a: 1},
+                {q: "Gold stays shiny because it...", o: ["Reacts quickly", "Does not react with oxygen", "Is a liquid"], a: 1},
+                {q: "What is the product of Copper + Oxygen?", o: ["Copper Oxide", "Copper Carbonate", "Copper Sulfate"], a: 0},
+                {q: "Rusting only applies to which metal?", o: ["Aluminium", "Iron", "Copper"], a: 1},
+                {q: "Is burning a metal a chemical or physical change?", o: ["Chemical", "Physical"], a: 0}
+            ]
+        },
+        "C3.3": {
+            title: "C3.3 Metals and Water",
+            slides: [
+                {h: "C3.3 Metals and Water", p: "Group 1 metals (Alkali Metals) react vigorously with water. The general equation is: Metal + Water -> Metal Hydroxide + Hydrogen."},
+                {h: "Observations", p: "Potassium fizzes, moves on the surface, and produces a lilac flame. Sodium melts into a ball and fizzes. Lithium fizzes steadily."},
+                {h: "Alkalinity", p: "The 'hydroxide' produced is an alkali. If you add universal indicator to the water after the reaction, it will turn purple or blue (pH 8-14)."},
+                {h: "Less Reactive Metals", p: "Metals like Magnesium react very slowly with cold water but will react with steam to form Magnesium Oxide and Hydrogen."}
+            ],
+            quiz: [
+                {q: "Metal + Water -> Metal Hydroxide + ...?", o: ["Oxygen", "Carbon Dioxide", "Hydrogen"], a: 2},
+                {q: "Which metal produces a lilac flame on water?", o: ["Lithium", "Sodium", "Potassium"], a: 2},
+                {q: "What is the pH of the liquid after Sodium reacts with water?", o: ["Acidic (pH 2)", "Neutral (pH 7)", "Alkaline (pH 10+)"], a: 2},
+                {q: "Which of these does NOT react with cold water?", o: ["Potassium", "Lithium", "Copper"], a: 2},
+                {q: "What happens to a piece of Sodium on water?", o: ["It sinks", "It melts into a ball and floats", "It turns green"], a: 1},
+                {q: "Magnesium + Steam -> ...?", o: ["Magnesium Oxide + Hydrogen", "Magnesium Hydroxide", "No reaction"], a: 0},
+                {q: "Why do Alkali metals move on the surface of water?", o: ["They are alive", "They are pushed by escaping hydrogen gas", "Magnetism"], a: 1},
+                {q: "The solution formed turns indicator what color?", o: ["Red", "Yellow", "Purple/Blue"], a: 2},
+                {q: "Reactivity... as you go down Group 1.", o: ["Increases", "Decreases", "Stays the same"], a: 0},
+                {q: "True or False: Most transition metals (like Gold) react with water.", o: ["True", "False"], a: 1}
+            ]
+        },
+        "C3.4": {
+            title: "C3.4 Metal Displacement",
+            slides: [
+                {h: "C3.4 Displacement Reactions", p: "A more reactive metal will 'displace' (push out) a less reactive metal from its compound."},
+                {h: "The Rule", p: "Think of it like a stronger person taking a seat from a weaker one. Reactive Metal + Less Reactive Metal Compound -> Reactive Metal Compound + Less Reactive Metal."},
+                {h: "Example", p: "Magnesium + Copper Sulfate -> Magnesium Sulfate + Copper. (The blue solution turns colorless and pinkish copper solid forms)."},
+                {h: "The Reactivity Series", p: "This is a list of metals from most to least reactive. Potassium is at the top; Gold is at the bottom."}
+            ],
+            quiz: [
+                {q: "A more reactive metal will... a less reactive one.", o: ["Ignore", "Displace", "Join"], a: 1},
+                {q: "Magnesium + Iron Sulfate -> ...?", o: ["No reaction", "Iron + Magnesium Sulfate", "Iron Magnesium"], a: 1},
+                {q: "Copper + Magnesium Sulfate -> ...?", o: ["No reaction", "Magnesium + Copper Sulfate", "Copper Magnesium"], a: 0},
+                {q: "Which metal is the MOST reactive?", o: ["Gold", "Iron", "Potassium"], a: 2},
+                {q: "Which metal is the LEAST reactive?", o: ["Potassium", "Aluminium", "Gold"], a: 2},
+                {q: "In a displacement reaction, the less reactive metal is...", o: ["Left in the compound", "Left as a pure element", "Destroyed"], a: 1},
+                {q: "Carbon is often included in the reactivity series between...", o: ["Potassium and Sodium", "Aluminium and Zinc", "Silver and Gold"], a: 1},
+                {q: "Displacement reactions often show a change in...", o: ["Temperature", "Color", "Both"], a: 2},
+                {q: "Iron + Copper Sulfate produces a pink solid. What is it?", o: ["Iron", "Copper", "Sulfur"], a: 1},
+                {q: "Why does Displacement happen?", o: ["To gain energy", "More reactive atoms form stronger bonds", "Magnetism"], a: 1}
+            ]
+        },
+        "C3.5": {
+            title: "C3.5 Extracting Metals",
+            slides: [
+                {h: "C3.5 Extracting Metals", p: "Most metals are found in the Earth's crust as **ores** (minerals containing the metal joined to other elements)."},
+                {h: "Unreactive Metals", p: "Metals like Gold and Silver are found 'native' (as pure elements) because they are so unreactive they don't join with oxygen."},
+                {h: "Extraction with Carbon", p: "Metals less reactive than carbon (like Iron) can be extracted by heating them with carbon. The carbon 'steals' the oxygen. Oxide + Carbon -> Metal + CO2."},
+                {h: "Electrolysis", p: "Metals more reactive than carbon (like Aluminium) are very difficult to extract and require electricity (electrolysis) to separate them from their ore."}
+            ],
+            quiz: [
+                {q: "What is a rock containing enough metal to be worth extracting?", o: ["Gem", "Ore", "Alloy"], a: 1},
+                {q: "How is Gold found in the ground?", o: ["As an oxide", "As a pure metal (native)", "As a liquid"], a: 1},
+                {q: "Which element can be used to extract Iron from its ore?", o: ["Oxygen", "Carbon", "Nitrogen"], a: 1},
+                {q: "Reduction is the... of oxygen.", o: ["Gain", "Loss", "Sharing"], a: 1},
+                {q: "How is Aluminium extracted?", o: ["Heating with Carbon", "Electrolysis", "Filtering"], a: 1},
+                {q: "Extracting metals with Carbon is a form of...", o: ["Oxidation", "Reduction", "Neutralization"], a: 1},
+                {q: "Why is electrolysis expensive?", o: ["It uses a lot of water", "It uses a lot of electricity", "It is slow"], a: 1},
+                {q: "The blast furnace is used to extract...", o: ["Aluminium", "Iron", "Gold"], a: 1},
+                {q: "Carbon + Iron Oxide -> ...?", o: ["Iron + Carbon Dioxide", "Iron Carbonate", "No reaction"], a: 0},
+                {q: "Which metal is most expensive to extract?", o: ["Iron", "Copper", "Aluminium"], a: 2}
+            ]
+        },
+        "C3.6": {
+            title: "C3.6 Ceramics",
+            slides: [
+                {h: "C3.6 Ceramics", p: "Ceramics are non-metallic solids with high melting points that aren't made from carbon-based compounds (e.g., clay, glass, porcelain)."},
+                {h: "Properties", p: "Ceramics are generally: 1. Hard, 2. Brittle (break instead of bending), 3. Insulators of heat/electricity, 4. Unreactive."},
+                {h: "Structure", p: "They have a 'giant structure' with many strong bonds, which is why they are so hard and have high melting points."},
+                {h: "Making Glass", p: "Most glass is 'soda-lime glass', made by heating a mixture of sand, sodium carbonate, and limestone."}
+            ],
+            quiz: [
+                {q: "What is a common property of ceramics?", o: ["Flexible", "Brittle", "Good conductor"], a: 1},
+                {q: "Which of these is a ceramic?", o: ["Plastic bottle", "Pottery/Clay", "Copper wire"], a: 1},
+                {q: "Ceramics are good insulators, meaning they...", o: ["Conduct heat well", "Do not conduct electricity well", "Are shiny"], a: 1},
+                {q: "What happens to clay when it is fired in a kiln?", o: ["It melts", "Chemical bonds form, making it hard", "It dissolves"], a: 1},
+                {q: "Glass is made mostly from...", o: ["Oil", "Sand", "Wood"], a: 1},
+                {q: "Ceramics have a... melting point.", o: ["High", "Low", "Room temperature"], a: 0},
+                {q: "Why are ceramics used for space shuttle tiles?", o: ["They are light", "They can withstand extreme heat", "They are colorful"], a: 1},
+                {q: "Brittle means a material will...", o: ["Stretch", "Shatter/Snap", "Melt"], a: 1},
+                {q: "Are ceramics metallic?", o: ["Yes", "No"], a: 1},
+                {q: "Brick is an example of a ceramic.", o: ["True", "False"], a: 0}
+            ]
+        },
+        "C3.7": {
+            title: "C3.7 Polymers",
+            slides: [
+                {h: "C3.7 Polymers", p: "Polymers are long-chain molecules made up of many smaller repeating units called monomers. 'Poly' means many; 'Mono' means one."},
+                {h: "Natural vs Synthetic", p: "Natural polymers include DNA, wool, silk, and rubber. Synthetic polymers are man-made, like plastics (polyethene, PVC, nylon)."},
+                {h: "Properties", p: "The properties of a polymer depend on the monomers used and how they are joined. They are usually flexible, chemically unreactive, and insulators."},
+                {h: "LDPE vs HDPE", p: "Low-density polyethene (LDPE) is flexible (bags), while High-density polyethene (HDPE) is strong and rigid (buckets)."}
+            ],
+            quiz: [
+                {q: "A polymer is made of many...", o: ["Polymers", "Monomers", "Atoms only"], a: 1},
+                {q: "Which of these is a NATURAL polymer?", o: ["Nylon", "PVC", "DNA"], a: 2},
+                {q: "Most 'plastics' are which type of material?", o: ["Ceramic", "Polymer", "Metal"], a: 1},
+                {q: "What does 'Poly' mean?", o: ["One", "Small", "Many"], a: 2},
+                {q: "Which property is common for polymers?", o: ["Brittle", "Chemically unreactive", "High density"], a: 1},
+                {q: "Poly(ethene) is made from which monomer?", o: ["Ethane", "Ethene", "Ethanol"], a: 1},
+                {q: "PVC is used for pipes because it is...", o: ["Soluble", "Strong and unreactive", "A liquid"], a: 1},
+                {q: "Which polymer is used for flexible shopping bags?", o: ["HDPE", "LDPE", "Ceramic"], a: 1},
+                {q: "Polymers are mostly made from...", o: ["Sand", "Crude oil", "Metal ores"], a: 1},
+                {q: "Rubber is a natural polymer.", o: ["True", "False"], a: 0}
+            ]
+        },
+        "C3.8": {
+            title: "C3.8 Composites",
+            slides: [
+                {h: "C3.8 Composites", p: "A composite material is made of two or more materials with different properties. When combined, they produce a material with improved properties."},
+                {h: "Structure", p: "Composites usually have a 'reinforcement' (fibers or fragments) surrounded by a 'matrix' (the binder)."},
+                {h: "Concrete", p: "A famous composite. It uses steel rods (reinforcement) and concrete (matrix) to be strong under both tension and compression."},
+                {h: "Other Examples", p: "Carbon fiber (strong/light), Plywood (layers of wood), and Fiberglass (glass fibers in plastic)."}
+            ],
+            quiz: [
+                {q: "A composite is made of... materials.", o: ["One", "Two or more", "Only metal"], a: 1},
+                {q: "The fibers in a composite are called the...", o: ["Matrix", "Reinforcement", "Glue"], a: 1},
+                {q: "The material that binds a composite together is the...", o: ["Matrix", "Reinforcement", "Solvent"], a: 0},
+                {q: "Why make a composite?", o: ["To make it cheaper", "To get better properties", "To make it heavier"], a: 1},
+                {q: "Which of these is a composite?", o: ["Pure Iron", "Reinforced concrete", "Glass"], a: 1},
+                {q: "Carbon fiber is used in racing cars because it is...", o: ["Heavy", "Strong but light", "Cheap"], a: 1},
+                {q: "MDF and Plywood are composites made of...", o: ["Plastic", "Wood", "Metal"], a: 1},
+                {q: "Fiberglass is glass fibers reinforced with...", o: ["Metal", "Plastic/Resin", "Cement"], a: 1},
+                {q: "Is a pure metal a composite?", o: ["Yes", "No"], a: 1},
+                {q: "Bone is a natural composite.", o: ["True", "False"], a: 0}
+            ]
+        },
+        "C3_Summary": {
+            title: "C3 Summary: Metals & Materials",
+            slides: [
+                {h: "C3 Chapter Review", p: "From the chemical reactions of metals to the engineering of modern materials."},
+                {h: "Metal Reactions", p: "Metals react with acids (making hydrogen), oxygen (oxidation), and water (making hydroxides). Reactivity varies wildly!"},
+                {h: "Getting Metals", p: "Unreactive metals are found pure. Medium reactivity metals are reduced with Carbon. High reactivity metals need Electrolysis."},
+                {h: "Materials Science", p: "Ceramics (hard/brittle), Polymers (long-chain plastics), and Composites (combinations for better strength)."}
+            ],
+            quiz: [
+                {q: "Acid + Metal -> ... + Hydrogen", o: ["Oxide", "Hydroxide", "Salt"], a: 2},
+                {q: "Which metal reacts most with water?", o: ["Gold", "Potassium", "Iron"], a: 1},
+                {q: "Adding Oxygen to a substance is...", o: ["Reduction", "Oxidation", "Displacement"], a: 1},
+                {q: "Carbon can extract Iron because it is...", o: ["Less reactive", "More reactive", "Prettier"], a: 1},
+                {q: "Ceramics are known for being...", o: ["Flexible", "Brittle", "Conductive"], a: 1},
+                {q: "Monomers join up to make...", o: ["Atoms", "Polymers", "Metals"], a: 1},
+                {q: "A composite material has a matrix and...", o: ["Reinforcement", "Acid", "Gas"], a: 0},
+                {q: "The test for Hydrogen is the...", o: ["Cloudy limewater", "Squeaky pop", "Relighting splint"], a: 1},
+                {q: "PVC and Polyethene are examples of...", o: ["Ceramics", "Polymers", "Composites"], a: 1},
+                {q: "Which is a way to stop Iron from rusting?", o: ["Add water", "Galvanizing (coating in zinc)", "Scrubbing with salt"], a: 1}
+            ]
+        },
+        "C4.1": {
+            title: "C4.1 The Earth and its Atmosphere",
+            slides: [
+                {h: "C4.1 The Earth's Structure", p: "The Earth is made of four main layers: 1. The Inner Core (solid iron/nickel), 2. The Outer Core (liquid), 3. The Mantle (semi-solid rock), and 4. The Crust (thin outer layer)."},
+                {h: "The Atmosphere Today", p: "Earth's atmosphere is roughly 78% Nitrogen, 21% Oxygen, and 1% other gases (Argon, CO2, and water vapor)."},
+                {h: "The Early Atmosphere", p: "Billions of years ago, the atmosphere was mostly Carbon Dioxide and water vapor from volcanoes. As the Earth cooled, water vapor condensed to form oceans, and plants evolved to produce oxygen."},
+                {h: "Tectonic Plates", p: "The crust and upper mantle are cracked into giant pieces called tectonic plates. They move a few centimeters a year due to convection currents in the mantle."}
+            ],
+            quiz: [
+                {q: "Which gas makes up 78% of the atmosphere?", o: ["Oxygen", "Nitrogen", "Carbon Dioxide"], a: 1},
+                {q: "Which layer of the Earth is the thinnest?", o: ["Mantle", "Outer Core", "Crust"], a: 2},
+                {q: "The early atmosphere was mostly...", o: ["Oxygen", "Carbon Dioxide", "Nitrogen"], a: 1},
+                {q: "What causes tectonic plates to move?", o: ["Wind", "Convection currents in the mantle", "The moon's gravity"], a: 1},
+                {q: "The inner core is made mostly of...", o: ["Iron and Nickel", "Gold", "Magnesium"], a: 0},
+                {q: "How did oceans form?", o: ["Comets hit Earth", "Water vapor condensed as Earth cooled", "Volcanoes leaked water"], a: 1},
+                {q: "What percentage of today's atmosphere is Oxygen?", o: ["10%", "21%", "78%"], a: 1},
+                {q: "Which layer is liquid?", o: ["Crust", "Mantle", "Outer Core"], a: 2},
+                {q: "What process added oxygen to the atmosphere?", o: ["Volcanic eruptions", "Photosynthesis", "Respiration"], a: 1},
+                {q: "The mantle behaves like a...", o: ["Solid that can flow very slowly", "Gas", "Thin liquid"], a: 0}
+            ]
+        },
+        "C4.2": {
+            title: "C4.2 Sedimentary Rocks",
+            slides: [
+                {h: "C4.2 Sedimentary Rocks", p: "These rocks form over millions of years from layers of sediment (sand, mud, pebbles) being squashed together."},
+                {h: "Formation Steps", p: "1. Weathering/Erosion (breaking rock), 2. Transport (moving it), 3. Deposition (settling in layers), 4. Compaction & Cementation (squashing into rock)."},
+                {h: "Characteristics", p: "Sedimentary rocks often have visible layers, are porous (have tiny holes), and are the only type of rock that contains **fossils**."},
+                {h: "Examples", o: "Common examples include Limestone, Sandstone, and Shale."}
+            ],
+            quiz: [
+                {q: "Which rock type is most likely to contain fossils?", o: ["Igneous", "Metamorphic", "Sedimentary"], a: 2},
+                {q: "The process of layers being squashed together is called...", o: ["Cementation", "Compaction", "Erosion"], a: 1},
+                {q: "Sedimentary rocks are often 'porous', meaning they...", o: ["Are very hard", "Have tiny gaps that hold water", "Are shiny"], a: 1},
+                {q: "Which of these is a sedimentary rock?", o: ["Basalt", "Limestone", "Marble"], a: 1},
+                {q: "Breaking down rocks into smaller pieces is...", o: ["Transport", "Weathering", "Deposition"], a: 1},
+                {q: "Sediments are usually transported by...", o: ["Wind and Water", "Animals", "Magnets"], a: 0},
+                {q: "True or False: Sedimentary rocks form very quickly.", o: ["True", "False"], a: 1},
+                {q: "What 'glues' the sediments together?", o: ["Mud", "Cementation from minerals", "Heat"], a: 1},
+                {q: "Where is deposition most likely to happen?", o: ["At the top of a mountain", "At the bottom of a lake/sea", "In a volcano"], a: 1},
+                {q: "Chalk is a type of sedimentary rock.", o: ["True", "False"], a: 0}
+            ]
+        },
+        "C4.3": {
+            title: "C4.3 Igneous & Metamorphic Rocks",
+            slides: [
+                {h: "C4.3 Igneous Rocks", p: "Igneous rocks form when molten rock cools and solidifies. If it cools underground (magma), it forms **Intrusive** rock with large crystals. If it cools on the surface (lava), it forms **Extrusive** rock with small crystals."},
+                {h: "Metamorphic Rocks", p: "These are formed when existing rocks are changed by **high heat and pressure** without melting. This makes them very hard and often gives them a foliated (banded) appearance."},
+                {h: "Examples", p: "Igneous: Granite, Basalt. Metamorphic: Marble (from limestone), Slate (from shale)."}
+            ],
+            quiz: [
+                {q: "Which rock forms from cooling magma or lava?", o: ["Sedimentary", "Igneous", "Metamorphic"], a: 1},
+                {q: "If an igneous rock cools slowly, its crystals will be...", o: ["Large", "Small", "Non-existent"], a: 0},
+                {q: "Metamorphic rocks are formed by...", o: ["Melting", "Heat and Pressure", "Layers of mud"], a: 1},
+                {q: "Marble is formed from which sedimentary rock?", o: ["Sandstone", "Limestone", "Shale"], a: 1},
+                {q: "Basalt has small crystals because it...", o: ["Cooled quickly on the surface", "Cooled slowly underground", "Was squashed"], a: 0},
+                {q: "Granite is an example of which rock type?", o: ["Sedimentary", "Metamorphic", "Igneous"], a: 2},
+                {q: "True or False: Metamorphic rocks contain fossils.", o: ["True", "False (they are usually destroyed)"], a: 1},
+                {q: "Which rock type is generally the hardest?", o: ["Sedimentary", "Metamorphic"], a: 1},
+                {q: "What is the difference between magma and lava?", o: ["Magma is underground", "Lava is underground", "They are different colors"], a: 0},
+                {q: "Slate is often used for roofs because it is...", o: ["Soft", "Easily split into thin sheets", "Transparent"], a: 1}
+            ]
+        },
+        "C4.4": {
+            title: "C4.4 The Rock Cycle",
+            slides: [
+                {h: "C4.4 The Rock Cycle", p: "The rock cycle is a continuous process that describes how rocks change from one type to another over millions of years through geological processes."},
+                {h: "Key Transitions", p: "1. Melting into magma creates Igneous. 2. Weathering creates Sedimentary. 3. Heat/Pressure creates Metamorphic."},
+                {h: "Uplift", p: "Tectonic activity can push rocks from deep underground up to the surface (uplift), where weathering can start the cycle again."}
+            ],
+            quiz: [
+                {q: "What process turns any rock into magma?", o: ["Weathering", "Melting", "Pressure"], a: 1},
+                {q: "What turns any rock into sediment?", o: ["Melting", "Compaction", "Weathering and Erosion"], a: 2},
+                {q: "Can a metamorphic rock turn back into a sedimentary rock?", o: ["Yes, if it is weathered and deposited", "No", "Only if it melts first"], a: 0},
+                {q: "What process pushes rocks up to the surface?", o: ["Deposition", "Uplift", "Gravity"], a: 1},
+                {q: "How long does the rock cycle take?", o: ["A few years", "Millions of years", "A century"], a: 1},
+                {q: "Magma cooling creates... rock.", o: ["Sedimentary", "Igneous", "Metamorphic"], a: 1},
+                {q: "Sedimentary rock becomes metamorphic through...", o: ["Cooling", "Heat and Pressure", "Erosion"], a: 1},
+                {q: "The rock cycle is driven by...", o: ["The Sun and Earth's internal heat", "The Moon", "Humans"], a: 0},
+                {q: "Where does the melting happen in the rock cycle?", o: ["Deep underground", "On the surface", "In the ocean"], a: 0},
+                {q: "Which rock type is the 'starting point' after melting?", o: ["Sedimentary", "Metamorphic", "Igneous"], a: 2}
+            ]
+        },
+        "C4.5": {
+            title: "C4.5 The Carbon Cycle",
+            slides: [
+                {h: "C4.5 The Carbon Cycle", p: "Carbon is constantly recycled through the atmosphere, oceans, and living things."},
+                {h: "Adding CO2", p: "Processes that add CO2 to the air: 1. Respiration (all living things), 2. Combustion (burning fuels), 3. Decomposition, 4. Volcanic eruptions."},
+                {h: "Removing CO2", p: "Processes that remove CO2: 1. Photosynthesis (plants/algae), 2. Dissolving into the oceans."},
+                {h: "Carbon Stores", p: "Carbon is stored in 'sinks' like forests, fossil fuels (coal/oil/gas), and carbonate rocks like limestone."}
+            ],
+            quiz: [
+                {q: "Which process REMOVES carbon dioxide from the air?", o: ["Combustion", "Photosynthesis", "Respiration"], a: 1},
+                {q: "Which process adds CO2 when fuels are burned?", o: ["Combustion", "Decomposition", "Photosynthesis"], a: 0},
+                {q: "Living things release CO2 during...", o: ["Photosynthesis", "Respiration", "Eating"], a: 1},
+                {q: "What is a 'carbon sink'?", o: ["A place where CO2 is stored", "A kitchen appliance", "A volcanic eruption"], a: 0},
+                {q: "Fossil fuels are made from...", o: ["Old rocks", "Ancient dead plants and animals", "Volcanic ash"], a: 1},
+                {q: "What happens to CO2 in the oceans?", o: ["It turns into oxygen", "It dissolves", "It disappears"], a: 1},
+                {q: "Decomposers (fungi/bacteria) release CO2 when they...", o: ["Grow", "Break down dead matter", "Photosynthesize"], a: 1},
+                {q: "Coal is a store of carbon. What was it originally?", o: ["Ancient trees/plants", "Dinosaurs", "Fish"], a: 0},
+                {q: "True or False: Animals can photosynthesize.", o: ["True", "False"], a: 1},
+                {q: "Deforestation affects the cycle by...", o: ["Adding more oxygen", "Reducing the removal of CO2", "Cooling the Earth"], a: 1}
+            ]
+        },
+        "C4.6": {
+            title: "C4.6 Climate Change",
+            slides: [
+                {h: "C4.6 The Greenhouse Effect", p: "Greenhouse gases (CO2 and Methane) trap heat from the Sun in the Earth's atmosphere, keeping the planet warm enough for life."},
+                {h: "Global Warming", p: "Human activity (burning fossil fuels and farming) has increased greenhouse gases, leading to an enhanced greenhouse effect and rising global temperatures."},
+                {h: "Impacts", p: "Consequences include: 1. Melting ice caps, 2. Rising sea levels, 3. Extreme weather events, 4. Loss of animal habitats."},
+                {h: "Methane", p: "Methane is a powerful greenhouse gas produced by rice paddies and cattle (cows)."}
+            ],
+            quiz: [
+                {q: "Which of these is a greenhouse gas?", o: ["Nitrogen", "Oxygen", "Carbon Dioxide"], a: 2},
+                {q: "What does the greenhouse effect do?", o: ["Cools the Earth", "Traps heat in the atmosphere", "Creates oxygen"], a: 1},
+                {q: "What is the main cause of rising CO2 levels?", o: ["Planting trees", "Burning fossil fuels", "Solar panels"], a: 1},
+                {q: "Which animal is a major source of methane?", o: ["Cows", "Dogs", "Birds"], a: 0},
+                {q: "A consequence of global warming is...", o: ["Lower sea levels", "Melting ice caps", "More polar bears"], a: 1},
+                {q: "Climate change refers to...", o: ["Weather changes today", "Long-term changes in global weather patterns", "The change of seasons"], a: 1},
+                {q: "How does the Sun's energy reach Earth?", o: ["Conduction", "Radiation (Light/Heat)", "Convection"], a: 1},
+                {q: "Which gas is more powerful at trapping heat than CO2?", o: ["Argon", "Methane", "Nitrogen"], a: 1},
+                {q: "Increasing forests would... global warming.", o: ["Help reduce", "Speed up", "Not affect"], a: 0},
+                {q: "True or False: The greenhouse effect is naturally essential for life.", o: ["True", "False"], a: 0}
+            ]
+        },
+        "C4.7": {
+            title: "C4.7 Recycling",
+            slides: [
+                {h: "C4.7 Resources and Recycling", p: "The Earth has limited resources. We can extend them by recycling materials like metals, glass, and paper."},
+                {h: "Advantages of Recycling", p: "1. Saves raw materials (ores), 2. Uses less energy than extracting new materials, 3. Reduces landfill waste."},
+                {h: "Recycling Metals", p: "Recycling Aluminium uses only 5% of the energy needed to extract it from ore. It also avoids the environmental damage of mining."},
+                {h: "The 3 Rs", p: "Reduce (use less), Reuse (use again), Recycle (process into something new)."}
+            ],
+            quiz: [
+                {q: "Why is recycling Aluminium good?", o: ["It makes it stronger", "It uses much less energy than extraction", "It changes the color"], a: 1},
+                {q: "What is a 'finite' resource?", o: ["One that will last forever", "One that will eventually run out", "A clean resource"], a: 1},
+                {q: "Which of these is the BEST for the environment?", o: ["Recycle", "Reuse", "Reduce"], a: 2},
+                {q: "What is saved by recycling paper?", o: ["Metal ores", "Trees", "Oil"], a: 1},
+                {q: "Recycling helps to reduce... waste.", o: ["Oxygen", "Landfill", "Space"], a: 1},
+                {q: "Which material can be recycled almost forever?", o: ["Paper", "Glass/Metal", "Plastic"], a: 1},
+                {q: "Extracting new metals from ores usually causes...", o: ["More trees to grow", "Environmental pollution and habitat loss", "Less CO2"], a: 1},
+                {q: "What does 'Reuse' mean?", o: ["Turning it into something else", "Using the same item again", "Throwing it away"], a: 1},
+                {q: "Is crude oil a finite resource?", o: ["Yes", "No"], a: 0},
+                {q: "Most plastic is made from...", o: ["Sand", "Crude Oil", "Wood"], a: 1}
+            ]
+        },
+        "C4_Summary": {
+            title: "C4 Summary: The Earth",
+            slides: [
+                {h: "C4 Chapter Review", p: "We have looked at the Earth from its core to its atmosphere and the cycles that keep it changing."},
+                {h: "The Rock Cycle", p: "Sedimentary (layers/fossils), Igneous (magma/crystals), and Metamorphic (heat/pressure) rocks constantly change into one another."},
+                {h: "The Changing Atmosphere", p: "Human activity is altering the balance of the carbon cycle, increasing the greenhouse effect and causing climate change."},
+                {h: "Sustainability", p: "Recycling is vital to preserve our finite resources and reduce our energy consumption."}
+            ],
+            quiz: [
+                {q: "Which rock contains fossils?", o: ["Igneous", "Sedimentary", "Metamorphic"], a: 1},
+                {q: "What are the two main gases in the atmosphere?", o: ["Oxygen & CO2", "Nitrogen & Oxygen", "Nitrogen & Methane"], a: 1},
+                {q: "How does magma become igneous rock?", o: ["Melting", "Cooling", "Pressure"], a: 1},
+                {q: "Photosynthesis takes CO2... the atmosphere.", o: ["Out of", "Into"], a: 0},
+                {q: "Global warming is caused by an increase in... gases.", o: ["Noble", "Greenhouse", "Reactive"], a: 1},
+                {q: "Which layer of Earth is the mantle?", o: ["The center", "The outer shell", "The thick layer between crust and core"], a: 2},
+                {q: "Rocks that have been changed by heat/pressure are...", o: ["Sedimentary", "Igneous", "Metamorphic"], a: 2},
+                {q: "The 3 Rs stand for...", o: ["Run, Race, Ride", "Reduce, Reuse, Recycle", "Read, Rock, Roll"], a: 1},
+                {q: "What is an intrusive igneous rock?", o: ["One that cooled underground", "One that cooled on the surface"], a: 0},
+                {q: "Carbon dioxide levels are rising mainly due to...", o: ["Planting trees", "Burning fossil fuels", "Sea levels rising"], a: 1}
+            ]
+        },
+        "P1.1": {
+            title: "P1.1 Charging Up",
+            slides: [
+                {h: "P1.1 Static Electricity", p: "Static electricity is caused by the transfer of electrons between insulators when they are rubbed together (friction)."},
+                {h: "Positive vs Negative", p: "Electrons are negatively charged. If an object gains electrons, it becomes negatively charged. If it loses them, it becomes positively charged."},
+                {h: "Forces", p: "Objects with the same charge repel each other. Objects with opposite charges attract each other. A charged object can also attract neutral objects (induction)."},
+                {h: "Discharge", p: "If enough charge builds up, electrons can 'jump' to a conductor or the earth, creating a spark (like lightning)."}
+            ],
+            quiz: [
+                {q: "What particle moves to create static charge?", o: ["Proton", "Neutron", "Electron"], a: 2},
+                {q: "Two negative charges will...", o: ["Attract", "Repel", "Do nothing"], a: 1},
+                {q: "If an object LOSES electrons, its charge is...", o: ["Positive", "Negative", "Neutral"], a: 0},
+                {q: "Static electricity builds up best on...", o: ["Metals", "Insulators (like plastic)", "Water"], a: 1},
+                {q: "Why do your hairs stand up after rubbing a balloon?", o: ["They are magnetic", "Each hair has the same charge and they repel", "The balloon pulls them by gravity"], a: 1},
+                {q: "What is a giant natural example of static discharge?", o: ["Rain", "Lightning", "Wind"], a: 1},
+                {q: "An object with no charge is...", o: ["Static", "Neutral", "Protonic"], a: 1},
+                {q: "Friction causes the transfer of...", o: ["Heat only", "Electrons", "Protons"], a: 1},
+                {q: "Opposite charges...", o: ["Attract", "Repel"], a: 0},
+                {q: "To 'earth' an object means to...", o: ["Bury it", "Let charge flow safely to the ground", "Rub it with soil"], a: 1}
+            ]
+        },
+        "P1.2": {
+            title: "P1.2 Circuits and Current",
+            slides: [
+                {h: "P1.2 Electric Current", p: "Current is the amount of charge flowing per second. It is measured in Amperes (Amps, A) using an ammeter."},
+                {h: "Ammeter Placement", p: "An ammeter must always be connected in series (in the same loop) as the component you are measuring."},
+                {h: "Conservation of Current", p: "Current is not used up. In a single loop (series), the current is the same at every point."},
+                {h: "Conventional Current", p: "By tradition, we say current flows from the positive (+) terminal to the negative (-) terminal, even though electrons actually flow the other way!"}
+            ],
+            quiz: [
+                {q: "What is current measured in?", o: ["Volts", "Amps", "Ohms"], a: 1},
+                {q: "Which instrument measures current?", o: ["Voltmeter", "Ammeter", "Thermometer"], a: 1},
+                {q: "In a series circuit, current is...", o: ["Different everywhere", "The same everywhere", "Used up by the bulb"], a: 1},
+                {q: "How must an ammeter be connected?", o: ["In series", "In parallel"], a: 0},
+                {q: "Current is the flow of...", o: ["Voltage", "Charge (Electrons)", "Energy"], a: 1},
+                {q: "If 2A leaves a battery, how much returns to the other side?", o: ["0A", "1A", "2A"], a: 2},
+                {q: "The symbol 'A' stands for...", o: ["Amps", "Acceleration", "Area"], a: 0},
+                {q: "True or False: Current flows in an open circuit.", o: ["True", "False"], a: 1},
+                {q: "A battery is made of two or more...", o: ["Cells", "Bulbs", "Wires"], a: 0},
+                {q: "Conventional current flows from...", o: ["- to +", "+ to -"], a: 1}
+            ]
+        },
+        "P1.3": {
+            title: "P1.3 Potential Difference",
+            slides: [
+                {h: "P1.3 Potential Difference (V)", p: "Potential Difference (Voltage) is the measure of the energy transferred to or from the charge as it moves through a circuit."},
+                {h: "The 'Push'", p: "It can be thought of as the 'push' provided by the battery. The higher the voltage, the more energy the electrons carry."},
+                {h: "Voltmeters", p: "Measured in Volts (V) using a voltmeter. A voltmeter must be connected in **parallel** (across the component)."},
+                {h: "Rating", p: "Cells have a rating (e.g., 1.5V). If you put two 1.5V cells in series, they provide a total of 3V."}
+            ],
+            quiz: [
+                {q: "What is the unit for Potential Difference?", o: ["Amps", "Volts", "Watts"], a: 1},
+                {q: "How do you connect a voltmeter?", o: ["In series", "In parallel"], a: 1},
+                {q: "Potential difference is a measure of... per charge.", o: ["Speed", "Energy", "Weight"], a: 1},
+                {q: "Two 9V batteries in series provide how many volts?", o: ["9V", "0V", "18V"], a: 2},
+                {q: "A voltmeter measures the difference between...", o: ["Two points in a circuit", "Two different batteries", "Inside a bulb"], a: 0},
+                {q: "If the voltage increases, the current will usually...", o: ["Decrease", "Increase", "Stay the same"], a: 1},
+                {q: "The 'push' in a circuit is provided by the...", o: ["Wire", "Switch", "Cell/Battery"], a: 2},
+                {q: "What is the symbol for Volts?", o: ["A", "V", "Ω"], a: 1},
+                {q: "Does a voltmeter allow current to flow through it?", o: ["Yes", "No (it has very high resistance)"], a: 1},
+                {q: "Potential difference is also known as...", o: ["Resistance", "Voltage", "Static"], a: 1}
+            ]
+        },
+        "P1.4": {
+            title: "P1.4 Series and Parallel",
+            slides: [
+                {h: "P1.4 Circuit Types", p: "Series: One single loop. Parallel: Multiple branches/loops."},
+                {h: "Series Rules", p: "Current is the same everywhere. Voltage is shared between components."},
+                {h: "Parallel Rules", p: "Current splits between branches. Each branch receives the full voltage of the battery."},
+                {h: "Reliability", p: "In parallel, if one bulb breaks, the others stay on. In series, if one breaks, the whole circuit stops working."}
+            ],
+            quiz: [
+                {q: "In which circuit does current split?", o: ["Series", "Parallel"], a: 1},
+                {q: "If one bulb blows in series, the others...", o: ["Stay on", "Go out", "Get brighter"], a: 1},
+                {q: "In a parallel circuit, voltage in each branch is...", o: ["Shared", "The same as the battery", "Zero"], a: 1},
+                {q: "Which circuit is used for house lights?", o: ["Series", "Parallel"], a: 1},
+                {q: "If a battery provides 6V to two identical bulbs in series, each gets...", o: ["6V", "3V", "0V"], a: 1},
+                {q: "In series, total resistance... as you add bulbs.", o: ["Increases", "Decreases"], a: 0},
+                {q: "A junction is where current...", o: ["Stops", "Splits or joins", "Turns into voltage"], a: 1},
+                {q: "In parallel, adding more branches... the total resistance.", o: ["Increases", "Decreases"], a: 1},
+                {q: "Parallel circuits have... loop(s).", o: ["Only one", "More than one"], a: 1},
+                {q: "Current in series is always...", o: ["Split", "The same", "Higher at the start"], a: 1}
+            ]
+        },
+        "P1.5": {
+            title: "P1.5 Resistance",
+            slides: [
+                {h: "P1.5 Resistance", p: "Resistance tells us how easy or difficult it is for current to flow. Measured in Ohms (Ω)."},
+                {h: "Formula", p: "$$Resistance (\Omega) = \frac{Potential\ Difference (V)}{Current (A)}$$"},
+                {h: "Conductors", p: "Metals have low resistance because they have free electrons. Insulators have high resistance."},
+                {h: "Components", p: "A thin wire has more resistance than a thick one. A long wire has more resistance than a short one."}
+            ],
+            quiz: [
+                {q: "What is the unit for resistance?", o: ["Volts", "Amps", "Ohms (Ω)"], a: 2},
+                {q: "If V=12V and I=3A, what is the Resistance?", o: ["4Ω", "36Ω", "9Ω"], a: 0},
+                {q: "High resistance means... current flows.", o: ["More", "Less", "Faster"], a: 1},
+                {q: "Which material is a good conductor?", o: ["Plastic", "Copper", "Glass"], a: 1},
+                {q: "Resistance... as a wire gets longer.", o: ["Increases", "Decreases"], a: 0},
+                {q: "What happens to energy in a resistor?", o: ["It disappears", "It is transferred as heat", "It creates more electrons"], a: 1},
+                {q: "A component designed to have resistance is a...", o: ["Battery", "Resistor", "Switch"], a: 1},
+                {q: "Current = Voltage / ...?", o: ["Power", "Resistance", "Time"], a: 1},
+                {q: "Thick wires have... resistance than thin wires.", o: ["More", "Less"], a: 1},
+                {q: "What is the symbol for Ohm?", o: ["O", "Ω", "R"], a: 1}
+            ]
+        },
+        "P1.6": {
+            title: "P1.6 Magnets & Magnetic Fields",
+            slides: [
+                {h: "P1.6 Magnetism", p: "Magnets have a North (N) and South (S) pole. Like poles repel, opposite poles attract."},
+                {h: "Magnetic Materials", p: "Only four common metals are magnetic: Iron, Steel, Nickel, and Cobalt."},
+                {h: "Magnetic Fields", p: "The space around a magnet where it can affect other magnets. Field lines go from North to South."},
+                {h: "Earth's Magnetism", p: "The Earth acts like a giant bar magnet. A compass points North because its needle aligns with Earth's magnetic field."}
+            ],
+            quiz: [
+                {q: "Which is a magnetic metal?", o: ["Aluminium", "Copper", "Cobalt"], a: 2},
+                {q: "Magnetic field lines point from...", o: ["S to N", "N to S", "Middle out"], a: 1},
+                {q: "Where is the field strongest?", o: ["At the poles", "In the center", "Far away"], a: 0},
+                {q: "A North pole and a South pole will...", o: ["Repel", "Attract"], a: 1},
+                {q: "What is a permanent magnet?", o: ["One that can be turned off", "One that keeps its magnetism", "An electromagnet"], a: 1},
+                {q: "A compass needle is a small...", o: ["Battery", "Magnet", "Resistor"], a: 1},
+                {q: "Is Copper magnetic?", o: ["Yes", "No"], a: 1},
+                {q: "The region of force around a magnet is a...", o: ["Power zone", "Magnetic field", "Static area"], a: 1},
+                {q: "What happens to the force as you move away?", o: ["Gets stronger", "Gets weaker", "Stays the same"], a: 1},
+                {q: "Which is a magnetic alloy?", o: ["Brass", "Steel", "Bronze"], a: 1}
+            ]
+        },
+        "P1.7": {
+            title: "P1.7 Electromagnets",
+            slides: [
+                {h: "P1.7 Electromagnets", p: "When electricity flows through a wire, it creates a magnetic field around it. A coil of wire is called a **solenoid**."},
+                {h: "Making it Stronger", p: "1. Increase current. 2. Increase number of turns on the coil. 3. Add an iron core."},
+                {h: "On/Off", p: "Unlike bar magnets, electromagnets can be switched on and off, making them very useful."},
+                {h: "The Core", p: "A 'soft' iron core is used because it magnetizes and demagnetizes easily."}
+            ],
+            quiz: [
+                {q: "What is a coil of wire called?", o: ["Core", "Solenoid", "Circuit"], a: 1},
+                {q: "What happens to the magnet if the current stops?", o: ["Stays magnetic", "Loses its magnetism", "Reverses poles"], a: 1},
+                {q: "Which increases strength?", o: ["Less current", "Fewer turns", "More turns of wire"], a: 2},
+                {q: "What is the best material for the core?", o: ["Iron", "Wood", "Plastic"], a: 0},
+                {q: "What surrounds a wire carrying current?", o: ["Electric field", "Magnetic field", "Heat only"], a: 1},
+                {q: "Why use an iron core?", o: ["To make it heavy", "To concentrate the magnetic field", "To stop it getting hot"], a: 1},
+                {q: "An electromagnet is a... magnet.", o: ["Permanent", "Temporary"], a: 1},
+                {q: "If you reverse the current, the poles...", o: ["Stay the same", "Swap", "Disappear"], a: 1},
+                {q: "Do more coils make it weaker?", o: ["Yes", "No"], a: 1},
+                {q: "Electromagnets use... to work.", o: ["Static electricity", "Electric current", "Gravity"], a: 1}
+            ]
+        },
+        "P1.8": {
+            title: "P1.8 Using Electromagnets",
+            slides: [
+                {h: "P1.8 Practical Uses", p: "Electromagnets are used in Scrapyard cranes, Electric bells, Relays, and Speakers."},
+                {h: "Scrapyards", p: "Cranes use huge electromagnets to pick up cars (on) and drop them (off)."},
+                {h: "The Relay", p: "A relay uses a small current in one circuit to switch on a much larger, dangerous current in another circuit."},
+                {h: "The Bell", p: "In a bell, the electromagnet pulls an iron arm, which hits the bell and breaks the circuit, causing the arm to spring back and repeat."}
+            ],
+            quiz: [
+                {q: "Which device uses an electromagnet to make sound?", o: ["Mirror", "Speaker", "Battery"], a: 1},
+                {q: "A 'relay' is used to...", o: ["Slow down current", "Switch a circuit remotely", "Increase voltage"], a: 1},
+                {q: "Why are they used in scrapyards?", o: ["They are pretty", "They can drop metal easily", "They never get old"], a: 1},
+                {q: "In an electric bell, what happens when the circuit breaks?", o: ["The bell rings forever", "The arm springs back", "The battery explodes"], a: 1},
+                {q: "MRI scanners in hospitals use...", o: ["Static electricity", "Superconducting electromagnets", "Permanent bar magnets"], a: 1},
+                {q: "What is a circuit breaker?", o: ["A manual switch", "An electromagnetic switch that flips if current is too high", "A broken wire"], a: 1},
+                {q: "Can an electromagnet pick up aluminium cans?", o: ["Yes", "No (Aluminium isn't magnetic)"], a: 1},
+                {q: "Maglev trains use electromagnets to...", o: ["Burn fuel", "Hover and move", "Stay on the ground"], a: 1},
+                {q: "Electric motors use electromagnets and...", o: ["Permanent magnets", "Water", "Gas"], a: 0},
+                {q: "The iron arm in a bell is called the...", o: ["Striker", "Armature", "Pole"], a: 1}
+            ]
+        },
+        "P1_Summary": {
+            title: "P1 Summary: Electricity & Magnetism",
+            slides: [
+                {h: "P1 Chapter Review", p: "We have moved from the build-up of static charge to the flow of current in circuits and the use of magnetism."},
+                {h: "Circuits", p: "Remember: Series (single loop) vs Parallel (multiple branches). Resistance (V/I) slows the flow."},
+                {h: "Electromagnetism", p: "Electricity and magnetism are linked. Moving charge creates a magnetic field, which we can harness in solenoids."},
+                {h: "Safety & Efficiency", p: "Materials are chosen based on their resistance (conductors vs insulators) and magnetic properties."}
+            ],
+            quiz: [
+                {q: "Current is measured in...", o: ["Volts", "Amps", "Ohms"], a: 1},
+                {q: "Resistance = Voltage divided by...?", o: ["Time", "Current", "Power"], a: 1},
+                {q: "Opposite poles attract, like poles...", o: ["Attract", "Repel"], a: 1},
+                {q: "Which is an insulator?", o: ["Copper", "Plastic", "Iron"], a: 1},
+                {q: "An ammeter is connected in...", o: ["Series", "Parallel"], a: 0},
+                {q: "Static is caused by the movement of...", o: ["Protons", "Electrons", "Neutrons"], a: 1},
+                {q: "A solenoid is a... of wire.", o: ["Straight piece", "Coil", "Broken bit"], a: 1},
+                {q: "Parallel circuits are better for home lighting because...", o: ["They use less power", "Bulbs can be switched independently", "They are cheaper"], a: 1},
+                {q: "The unit of resistance is the...", o: ["Ohm", "Volt", "Amp"], a: 0},
+                {q: "What happens if you increase voltage in a fixed circuit?", o: ["Current decreases", "Current increases", "Resistance increases"], a: 1}
+            ]
+        },
+        "P2.1": {
+            title: "P2.1 Food and Fuels",
+            slides: [
+                {h: "P2.1 Chemical Stores", p: "Food and fuels (like wood, coal, and gas) are stores of chemical energy. When we eat food or burn fuel, this energy is released."},
+                {h: "Measuring Energy", p: "Energy is measured in Joules (J). Because a Joule is very small, we often use kilojoules (kJ). 1 kJ = 1000 J."},
+                {h: "Energy in Food", p: "Different foods store different amounts of energy. Labels on food packaging show the energy content in kJ or kilocalories (kcal)."},
+                {h: "Energy Needs", p: "Your daily energy requirement depends on your age, gender, and activity level. If you take in more energy than you use, the body stores it as fat."}
+            ],
+            quiz: [
+                {q: "What is the unit of energy?", o: ["Newtons", "Joules", "Watts"], a: 1},
+                {q: "How many Joules are in 2 kilojoules?", o: ["20 J", "200 J", "2000 J"], a: 2},
+                {q: "Food and fuels are stores of... energy.", o: ["Kinetic", "Chemical", "Thermal"], a: 1},
+                {q: "Which activity requires the most energy?", o: ["Sleeping", "Walking", "Running"], a: 2},
+                {q: "Where is energy content usually found on food?", o: ["The price tag", "The nutritional label", "The barcode"], a: 1},
+                {q: "A person who is very active needs... energy.", o: ["Less", "More", "The same"], a: 1},
+                {q: "What happens to excess energy in the body?", o: ["It is destroyed", "It is stored as fat", "It turns into bones"], a: 1},
+                {q: "Burning fuel releases energy as...", o: ["Light and Heat", "Sound only", "Cold"], a: 0},
+                {q: "1 calorie is roughly equal to... Joules.", o: ["4", "40", "400"], a: 0},
+                {q: "Is coal a fuel?", o: ["Yes", "No"], a: 0}
+            ]
+        },
+        "P2.2": {
+            title: "P2.2 Energy Adds Up",
+            slides: [
+                {h: "P2.2 Conservation of Energy", p: "The Law of Conservation of Energy states that energy cannot be created or destroyed, only transferred from one store to another."},
+                {h: "Dissipated Energy", p: "Energy often spreads out into the surroundings, usually as thermal (heat) energy. This is often called 'wasted' energy because it is no longer useful."},
+                {h: "Energy Flow", p: "We can track energy using Sankey Diagrams. The width of the arrows represents the amount of energy in Joules."},
+                {h: "Total Energy", p: "Total Energy In = Useful Energy Out + Wasted Energy Out."}
+            ],
+            quiz: [
+                {q: "Can energy be destroyed?", o: ["Yes", "No"], a: 1},
+                {q: "Energy that spreads to the surroundings is...", o: ["Stored", "Dissipated", "Created"], a: 1},
+                {q: "What diagram shows energy transfers?", o: ["Venn Diagram", "Sankey Diagram", "Pie Chart"], a: 1},
+                {q: "If a bulb takes 100J and gives 10J of light, how much is wasted?", o: ["90J", "110J", "10J"], a: 0},
+                {q: "Wasted energy is usually in the form of...", o: ["Light", "Heat", "Sound"], a: 1},
+                {q: "The law of... of energy.", o: ["Creation", "Conservation", "Destruction"], a: 1},
+                {q: "Useful energy is the energy that...", o: ["Is wasted", "Does the intended task", "Disappears"], a: 1},
+                {q: "In a car, fuel energy turns into... energy.", o: ["Kinetic", "Elastic", "Static"], a: 0},
+                {q: "The total amount of energy in the universe...", o: ["Increases", "Decreases", "Stays the same"], a: 2},
+                {q: "Efficiency is a measure of how much energy is...", o: ["Wasted", "Useful", "Destroyed"], a: 1}
+            ]
+        },
+        "P2.3": {
+            title: "P2.3 Energy and Temperature",
+            slides: [
+                {h: "P2.3 Heat vs Temperature", p: "Temperature is a measure of how hot or cold something is (°C). Thermal energy (J) depends on the arrangement and motion of particles."},
+                {h: "Mass Matters", p: "A swimming pool at 30°C has much more thermal energy than a cup of tea at 90°C because there are many more particles in the pool."},
+                {h: "Equilibrium", p: "Energy always flows from a hotter object to a colder one until they reach the same temperature (thermal equilibrium)."}
+            ],
+            quiz: [
+                {q: "What is temperature measured in?", o: ["Joules", "Degrees Celsius", "Watts"], a: 1},
+                {q: "Which has more thermal energy?", o: ["A hot spark", "A warm bathtub", "A lit match"], a: 1},
+                {q: "Energy flows from... to...?", o: ["Cold to Hot", "Hot to Cold", "Randomly"], a: 1},
+                {q: "Thermal energy is measured in...", o: ["Joules", "Celsius", "Newtons"], a: 0},
+                {q: "When two objects reach the same temperature, it is...", o: ["Equilibrium", "Evaporation", "Freezing"], a: 0},
+                {q: "Does a frozen lake have thermal energy?", o: ["No", "Yes (its particles are still vibrating)"], a: 1},
+                {q: "Adding energy to a solid makes particles...", o: ["Vibrate faster", "Vibrate slower", "Stop"], a: 0},
+                {q: "Which instrument measures temperature?", o: ["Ammeter", "Thermometer", "Barometer"], a: 1},
+                {q: "If you leave a hot coffee, its energy... to the room.", o: ["Increases", "Dissipates", "Stays"], a: 1},
+                {q: "Does mass affect the amount of thermal energy?", o: ["Yes", "No"], a: 0}
+            ]
+        },
+        "P2.4": {
+            title: "P2.4 Energy Transfer: Particles",
+            slides: [
+                {h: "P2.4 Conduction", p: "Conduction is the transfer of heat in solids. Particles vibrate and pass energy to their neighbors. Metals are great conductors because they have free electrons."},
+                {h: "Convection", p: "Convection happens in fluids (liquids and gases). Hotter, less dense regions rise, and cooler, denser regions sink, creating a convection current."},
+                {h: "Insulators", p: "Materials like wood, plastic, and air are poor conductors (insulators). They slow down the transfer of energy."}
+            ],
+            quiz: [
+                {q: "Heat transfer in solids is called...", o: ["Convection", "Conduction", "Radiation"], a: 1},
+                {q: "Heat transfer in liquids and gases is called...", o: ["Convection", "Conduction", "Radiation"], a: 0},
+                {q: "Why are metals good conductors?", o: ["They are heavy", "They have free electrons", "They are shiny"], a: 1},
+                {q: "A convection current is caused by changes in...", o: ["Color", "Density", "Weight"], a: 1},
+                {q: "Warm air...", o: ["Sinks", "Rises", "Disappears"], a: 1},
+                {q: "Which is a good insulator?", o: ["Copper", "Iron", "Wool"], a: 2},
+                {q: "Why does a handle on a pan stay cool if it is plastic?", o: ["Plastic is a conductor", "Plastic is an insulator", "Plastic is a metal"], a: 1},
+                {q: "Double glazing works by trapping... between glass.", o: ["Water", "Air", "Metal"], a: 1},
+                {q: "In convection, particles move... apart when heated.", o: ["Closer", "Further"], a: 1},
+                {q: "Vacuum flasks prevent conduction because they have...", o: ["No particles (a vacuum)", "Hot water", "Metal walls"], a: 0}
+            ]
+        },
+        "P2.5": {
+            title: "P2.5 Energy Transfer: Radiation",
+            slides: [
+                {h: "P2.5 Infrared Radiation", p: "Radiation is the transfer of energy by waves. It does NOT need particles, which is why heat from the Sun can travel through the vacuum of space."},
+                {h: "Surface Effects", p: "Dark, matte (dull) surfaces are the best absorbers and emitters of radiation. Shiny, light surfaces reflect radiation."},
+                {h: "Thermal Imaging", p: "Special cameras can detect infrared radiation, showing hot objects as bright colors and cold objects as dark colors."}
+            ],
+            quiz: [
+                {q: "Radiation travels via...", o: ["Particles", "Waves", "Wires"], a: 1},
+                {q: "Which surface is the best absorber of heat?", o: ["Shiny silver", "Dull black", "White"], a: 1},
+                {q: "How does Sun's energy reach Earth?", o: ["Conduction", "Convection", "Radiation"], a: 2},
+                {q: "Shiny surfaces... radiation.", o: ["Absorb", "Reflect", "Emit"], a: 1},
+                {q: "Can radiation travel through a vacuum?", o: ["Yes", "No"], a: 0},
+                {q: "Infrared is a type of... wave.", o: ["Sound", "Electromagnetic", "Water"], a: 1},
+                {q: "Which would stay cooler in the sun?", o: ["Black car", "White car"], a: 1},
+                {q: "All objects emit some infrared radiation.", o: ["True", "False"], a: 0},
+                {q: "The hotter an object, the... radiation it emits.", o: ["More", "Less", "Same"], a: 0},
+                {q: "A 'Leslie Cube' is used to demonstrate...", o: ["Convection", "Radiation", "Magnetism"], a: 1}
+            ]
+        },
+        "P2.6": {
+            title: "P2.6 Energy Resources",
+            slides: [
+                {h: "P2.6 Renewable vs Non-Renewable", p: "Non-renewable resources (coal, oil, gas, nuclear) will eventually run out. Renewable resources (solar, wind, tidal, geothermal) can be replaced."},
+                {h: "Fossil Fuels", p: "Burning fossil fuels releases CO2, contributing to climate change. Nuclear power doesn't release CO2 but produces radioactive waste."},
+                {h: "Solar and Wind", p: "Solar cells turn sunlight into electricity. Wind turbines use kinetic energy. Both are clean but 'intermittent' (they don't work all the time)."}
+            ],
+            quiz: [
+                {q: "Which is a renewable resource?", o: ["Coal", "Wind", "Natural Gas"], a: 1},
+                {q: "Fossil fuels release which greenhouse gas?", o: ["Oxygen", "Nitrogen", "Carbon Dioxide"], a: 2},
+                {q: "Geothermal energy comes from...", o: ["The Sun", "Heat inside the Earth", "Waves"], a: 1},
+                {q: "Which resource is 'intermittent'?", o: ["Nuclear", "Coal", "Solar"], a: 2},
+                {q: "Is Nuclear power renewable?", o: ["Yes", "No"], a: 1},
+                {q: "Hydroelectric power uses... energy.", o: ["Moving water", "Burning wood", "Wind"], a: 0},
+                {q: "A benefit of renewable energy is...", o: ["It never runs out", "It is always cheap", "It works 24/7"], a: 0},
+                {q: "What is 'Biomass'?", o: ["Energy from stones", "Energy from organic matter like wood", "Energy from the moon"], a: 1},
+                {q: "Which resource uses the tides?", o: ["Solar", "Tidal", "Geothermal"], a: 1},
+                {q: "Most of the world's energy currently comes from...", o: ["Renewables", "Fossil Fuels", "Batteries"], a: 1}
+            ]
+        },
+        "P2.7": {
+            title: "P2.7 Energy and Power",
+            slides: [
+                {h: "P2.7 Power", p: "Power is the rate at which energy is transferred. It is measured in Watts (W). 1 Watt = 1 Joule per second."},
+                {h: "Calculation", p: "$$Power (W) = \frac{Energy (J)}{Time (s)}$$"},
+                {h: "Appliances", p: "Electrical appliances have power ratings. A 2000W kettle transfers more energy every second than a 60W bulb."}
+            ],
+            quiz: [
+                {q: "What is the unit for Power?", o: ["Joule", "Watt", "Newton"], a: 1},
+                {q: "Power is energy divided by...?", o: ["Distance", "Time", "Mass"], a: 1},
+                {q: "1 Watt is equal to...", o: ["1 J/s", "10 J/s", "1 kJ/s"], a: 0},
+                {q: "If a machine transfers 100J in 2s, what is its power?", o: ["200W", "50W", "102W"], a: 1},
+                {q: "Which appliance is likely to have the highest power?", o: ["LED Bulb", "Electric Shower", "Clock"], a: 1},
+                {q: "How many Watts are in a kilowatt (kW)?", o: ["10", "100", "1000"], a: 2},
+                {q: "If power is high, energy is transferred...", o: ["Slowly", "Quickly", "Not at all"], a: 1},
+                {q: "A 60W bulb uses how many Joules per second?", o: ["6J", "60J", "600J"], a: 1},
+                {q: "Time must be measured in... for the formula.", o: ["Minutes", "Hours", "Seconds"], a: 2},
+                {q: "Energy = Power × ...?", o: ["Time", "Distance", "Speed"], a: 0}
+            ]
+        },
+        "P2.8": {
+            title: "P2.8 Work, Energy, and Machines",
+            slides: [
+                {h: "P2.8 Work Done", p: "In physics, 'Work' is done when a force moves an object. It is measured in Joules (J)."},
+                {h: "Formula", p: "$$Work Done (J) = Force (N) \times Distance (m)$$"},
+                {h: "Simple Machines", p: "Machines like levers and pulleys make work easier by acting as **force multipliers**. They allow you to move a large load with a small effort, but you have to move the effort over a larger distance."}
+            ],
+            quiz: [
+                {q: "What is Work Done measured in?", o: ["Newtons", "Joules", "Watts"], a: 1},
+                {q: "Work Done = Force × ...?", o: ["Speed", "Distance", "Time"], a: 1},
+                {q: "If you push a car with 500N for 2m, how much work is done?", o: ["1000J", "250J", "502J"], a: 0},
+                {q: "A lever is an example of a...", o: ["Resistor", "Simple Machine", "Fuel"], a: 1},
+                {q: "A force multiplier allows you to...", o: ["Use more force", "Lift a heavy load with less effort", "Go faster"], a: 1},
+                {q: "If an object doesn't move, is work being done?", o: ["Yes", "No"], a: 1},
+                {q: "Distance must be in... for the formula.", o: ["Centimeters", "Meters", "Kilometers"], a: 1},
+                {q: "What is the 'pivot' in a lever called?", o: ["Effort", "Load", "Fulcrum"], a: 2},
+                {q: "Pulleys help change the... of a force.", o: ["Color", "Direction", "Mass"], a: 1},
+                {q: "Force is measured in...", o: ["Joules", "Newtons", "Kilograms"], a: 1}
+            ]
+        },
+        "P2_Summary": {
+            title: "P2 Summary: Energy",
+            slides: [
+                {h: "P2 Chapter Review", p: "Energy is the ability to do work. It cannot be created or destroyed, only transferred."},
+                {h: "Transfer Methods", p: "Conduction (solids), Convection (fluids), and Radiation (waves)."},
+                {h: "Power and Work", p: "Work is Force × Distance. Power is Energy ÷ Time. Machines make work easier but don't reduce the total energy needed."},
+                {h: "Resources", p: "We must balance our use of non-renewable fuels with renewable resources to protect the environment."}
+            ],
+            quiz: [
+                {q: "Unit of Energy?", o: ["Watt", "Joule", "Newton"], a: 1},
+                {q: "Heat transfer without particles?", o: ["Conduction", "Convection", "Radiation"], a: 2},
+                {q: "A dull black surface is a good... of heat.", o: ["Reflector", "Absorber", "Insulator"], a: 1},
+                {q: "Power is measured in...", o: ["Joules", "Watts", "Amps"], a: 1},
+                {q: "Is coal renewable?", o: ["Yes", "No"], a: 1},
+                {q: "Work Done = Force × Distance. (True/False)", o: ["True", "False"], a: 0},
+                {q: "Convection happens in...", o: ["Solids only", "Liquids and Gases", "Vacuums"], a: 1},
+                {q: "A 1000W machine uses... Joules per second.", o: ["1J", "100J", "1000J"], a: 2},
+                {q: "Energy stored in a battery is...", o: ["Kinetic", "Chemical", "Thermal"], a: 1},
+                {q: "Sankey diagrams show energy...", o: ["Efficiency/Transfers", "Temperature", "Voltage"], a: 0}
+            ]
+        },
+        "P3.1": {
+            title: "P3.1 Speed",
+            slides: [
+                {h: "P3.1 Speed", p: "Speed is a measure of how far an object moves in a certain amount of time. It is a 'scalar' quantity, meaning it has size but no specific direction."},
+                {h: "Calculation", p: "The formula for speed is: $$Speed (m/s) = \frac{Distance (m)}{Time (s)}$$"},
+                {h: "Average Speed", p: "In real life, speed changes. Average speed is the total distance traveled divided by the total time taken."},
+                {h: "Units", p: "The standard unit is meters per second (m/s), but we also use kilometers per hour (km/h) or miles per hour (mph)."}
+            ],
+            quiz: [
+                {q: "What is the formula for speed?", o: ["Distance × Time", "Distance / Time", "Time / Distance"], a: 1},
+                {q: "What is the standard unit for speed in physics?", o: ["mph", "km/h", "m/s"], a: 2},
+                {q: "If a car travels 100m in 5s, what is its speed?", o: ["20 m/s", "500 m/s", "0.05 m/s"], a: 0},
+                {q: "How do you calculate distance?", o: ["Speed / Time", "Speed × Time", "Time / Speed"], a: 1},
+                {q: "A person walks 10km in 2 hours. What is their average speed?", o: ["20 km/h", "5 km/h", "2 km/h"], a: 1},
+                {q: "What does a speedometer measure?", o: ["Average speed", "Instantaneous speed", "Total distance"], a: 1},
+                {q: "If speed is 10m/s, how far do you go in 1 minute?", o: ["10m", "60m", "600m"], a: 2},
+                {q: "Relative speed is...", o: ["Your speed plus your friend's", "How fast one object is moving compared to another", "Top speed"], a: 1},
+                {q: "Two cars drive at 30mph toward each other. Their relative speed is...", o: ["0 mph", "30 mph", "60 mph"], a: 2},
+                {q: "Is speed a vector or a scalar?", o: ["Vector", "Scalar"], a: 1}
+            ]
+        },
+        "P3.2": {
+            title: "P3.2 Motion Graphs",
+            slides: [
+                {h: "P3.2 Distance-Time Graphs", p: "These graphs show how far an object has moved from its starting point over time. Time is always on the x-axis."},
+                {h: "Interpreting the Slope", p: "A straight, sloping line means **constant speed**. A horizontal (flat) line means the object has **stopped** (stationary)."},
+                {h: "Steepness", p: "The steeper the gradient (slope) of the line, the faster the object is moving."},
+                {h: "Acceleration", p: "A curved line indicates that the speed is changing (acceleration or deceleration)."}
+            ],
+            quiz: [
+                {q: "What does a horizontal line on a distance-time graph mean?", o: ["Constant speed", "Stationary (stopped)", "Accelerating"], a: 1},
+                {q: "What does the gradient (slope) of the line represent?", o: ["Distance", "Time", "Speed"], a: 2},
+                {q: "A steeper line means the object is moving...", o: ["Slower", "Faster", "At the same speed"], a: 1},
+                {q: "A curved line represents...", o: ["Constant speed", "Changing speed (acceleration)", "Standing still"], a: 1},
+                {q: "Where is 'Time' placed on the graph?", o: ["X-axis", "Y-axis"], a: 0},
+                {q: "If the line goes back down to the x-axis, the object is...", o: ["Speeding up", "Returning to the start", "Falling over"], a: 1},
+                {q: "A straight sloping line shows... speed.", o: ["Changing", "Constant", "Zero"], a: 1},
+                {q: "Speed is calculated by dividing... by time.", o: ["Mass", "Distance", "Force"], a: 1},
+                {q: "Can a distance-time graph have a vertical line?", o: ["Yes", "No (that would mean infinite speed)"], a: 1},
+                {q: "If an object moves 5m every second, the graph will be a...", o: ["Curve", "Straight sloping line", "Flat line"], a: 1}
+            ]
+        },
+        "P3.3": {
+            title: "P3.3 Pressure in Gases",
+            slides: [
+                {h: "P3.3 Gas Pressure", p: "Gas pressure is caused by gas particles colliding with the walls of their container. Each collision exerts a tiny force."},
+                {h: "Atmospheric Pressure", p: "The air around us exerts pressure. As you go higher (e.g., up a mountain), atmospheric pressure decreases because there are fewer air particles above you."},
+                {h: "Changing Pressure", p: "You can increase gas pressure by: 1. Adding more particles, 2. Increasing the temperature (particles move faster), or 3. Decreasing the volume (less space)."}
+            ],
+            quiz: [
+                {q: "What causes gas pressure?", o: ["Gravity", "Particle collisions with walls", "The color of the gas"], a: 1},
+                {q: "What happens to pressure if you heat a gas?", o: ["Decreases", "Increases", "Stays the same"], a: 1},
+                {q: "Atmospheric pressure... as you go higher.", o: ["Increases", "Decreases", "Stays the same"], a: 1},
+                {q: "Compressing a gas into a smaller volume makes pressure...", o: ["Higher", "Lower", "Zero"], a: 0},
+                {q: "Why does a balloon expand when blown up?", o: ["Outside pressure is higher", "Inside particle collisions push the walls out", "The rubber gets cold"], a: 1},
+                {q: "The unit for pressure is the...", o: ["Newton", "Joule", "Pascal (Pa)"], a: 2},
+                {q: "Fewer collisions mean... pressure.", o: ["More", "Less"], a: 1},
+                {q: "Why do ears 'pop' on a plane?", o: ["Sound is too loud", "Changes in air pressure", "It is too cold"], a: 1},
+                {q: "If volume is doubled, pressure is roughly...", o: ["Doubled", "Halved", "Quadrupled"], a: 1},
+                {q: "Gases can be compressed because...", o: ["Particles are far apart", "Particles are large", "They are invisible"], a: 0}
+            ]
+        },
+        "P3.4": {
+            title: "P3.4 Pressure in Liquids",
+            slides: [
+                {h: "P3.4 Liquid Pressure", p: "Liquids are incompressible (they cannot be squashed). Pressure in a liquid acts in all directions."},
+                {h: "Depth and Pressure", p: "Pressure increases with depth. The deeper you go, the more weight of water is above you, pressing down."},
+                {h: "Upthrust", p: "The higher pressure at the bottom of an object compared to the top creates an upward force called **upthrust**. If upthrust equals weight, the object floats."},
+                {h: "Hydraulics", p: "Because liquids can't be squashed, they can be used to transmit pressure from one place to another in machines."}
+            ],
+            quiz: [
+                {q: "Liquid pressure acts in which direction?", o: ["Down only", "Up only", "All directions"], a: 2},
+                {q: "As depth increases, liquid pressure...", o: ["Decreases", "Increases", "Stays the same"], a: 1},
+                {q: "Why do dams have thicker walls at the bottom?", o: ["To save concrete", "Water pressure is highest at the bottom", "Fish live there"], a: 1},
+                {q: "What is the name of the upward force in a liquid?", o: ["Gravity", "Upthrust", "Friction"], a: 1},
+                {q: "An object floats if upthrust is... its weight.", o: ["Less than", "Equal to", "Zero"], a: 1},
+                {q: "Can you compress a liquid?", o: ["Yes", "No"], a: 1},
+                {q: "Which would have higher pressure: 1m deep in a pool or 10m deep?", o: ["1m", "10m"], a: 1},
+                {q: "Hydraulic systems use... to move parts.", o: ["Gases", "Liquids", "Magnets"], a: 1},
+                {q: "Pressure in a liquid depends on depth and...", o: ["Density of the liquid", "Color of the liquid", "Shape of the container"], a: 0},
+                {q: "A submarine must be strong to resist...", o: ["Upthrust", "Water pressure", "Sunlight"], a: 1}
+            ]
+        },
+        "P3.5": {
+            title: "P3.5 Pressure in Solids",
+            slides: [
+                {h: "P3.5 Solid Pressure", p: "Pressure is the amount of force exerted over a specific area."},
+                {h: "Formula", p: "$$Pressure (N/m^2\ or\ Pa) = \frac{Force (N)}{Area (m^2)}$$"},
+                {h: "High Pressure", p: "A small area (like a needle or a knife edge) concentrates force, creating very high pressure."},
+                {h: "Low Pressure", p: "A large area (like snowshoes or wide tires) spreads the force, creating low pressure and preventing sinking."}
+            ],
+            quiz: [
+                {q: "What is the formula for pressure?", o: ["Force × Area", "Force / Area", "Area / Force"], a: 1},
+                {q: "Which creates HIGHER pressure?", o: ["Flat shoes", "High heels", "Bare feet"], a: 1},
+                {q: "Snowshoes help you walk on snow because they...", o: ["Are warm", "Increase the area to lower pressure", "Decrease the area"], a: 1},
+                {q: "Unit for pressure is Newtons per square meter, also called...", o: ["Joule", "Pascal", "Watt"], a: 1},
+                {q: "If force is 10N and area is 2m², what is the pressure?", o: ["20 Pa", "5 Pa", "12 Pa"], a: 1},
+                {q: "Why is a sharp knife better at cutting?", o: ["It's cleaner", "The small area creates high pressure", "It's heavier"], a: 1},
+                {q: "Tractors have wide tires to... pressure on the soil.", o: ["Increase", "Decrease", "Ignore"], a: 1},
+                {q: "If you stand on one leg, the pressure on the floor...", o: ["Doubles", "Halves", "Stays same"], a: 0},
+                {q: "A thumbtack has a wide head so the pressure on your thumb is...", o: ["High", "Low", "Painful"], a: 1},
+                {q: "Force is 100N, Pressure is 50Pa. What is the Area?", o: ["5000m²", "2m²", "0.5m²"], a: 1}
+            ]
+        },
+        "P3.6": {
+            title: "P3.6 Turning Forces",
+            slides: [
+                {h: "P3.6 Moments", p: "A moment is the turning effect of a force. It happens when a force is applied at a distance from a pivot (fulcrum)."},
+                {h: "Calculation", p: "$$Moment (Nm) = Force (N) \times Distance\ from\ pivot (m)$$"},
+                {h: "Law of Moments", p: "An object is balanced (in equilibrium) if the total clockwise moment equals the total anti-clockwise moment."},
+                {h: "Increasing the Moment", p: "You can increase the turning effect by using a larger force or a longer lever (greater distance)."}
+            ],
+            quiz: [
+                {q: "What is the turning effect of a force called?", o: ["Moment", "Movement", "Momentum"], a: 0},
+                {q: "What is the unit for a Moment?", o: ["Newtons", "Newton-meters (Nm)", "Pascals"], a: 1},
+                {q: "Moment = Force × ...?", o: ["Speed", "Distance from pivot", "Time"], a: 1},
+                {q: "Which would make it easier to open a heavy door?", o: ["Pushing near the hinge", "Pushing far from the hinge", "Pushing with one finger"], a: 1},
+                {q: "A seesaw is balanced if clockwise and anti-clockwise moments are...", o: ["Different", "Equal", "Zero"], a: 1},
+                {q: "If a 10N force is 2m from the pivot, what is the moment?", o: ["5 Nm", "12 Nm", "20 Nm"], a: 2},
+                {q: "The pivot point is also called the...", o: ["Effort", "Fulcrum", "Load"], a: 1},
+                {q: "To balance a heavier person on a seesaw, they should sit...", o: ["Further from the pivot", "Closer to the pivot", "On top of the other person"], a: 1},
+                {q: "A crowbar is an example of a...", o: ["Resistor", "Lever", "Pulley"], a: 1},
+                {q: "Distance in the moment formula must be...", o: ["Parallel to the force", "Perpendicular to the force"], a: 1}
+            ]
+        },
+        "P3_Summary": {
+            title: "P3 Summary: Motion & Pressure",
+            slides: [
+                {h: "P3 Chapter Review", p: "We have explored how objects move and how forces are distributed over areas and around pivots."},
+                {h: "Speed & Graphs", p: "Speed = Distance / Time. Distance-time graphs help us visualize speed as the gradient of the line."},
+                {h: "Pressure", p: "Pressure = Force / Area. It occurs in solids, liquids (increasing with depth), and gases (collisions)."},
+                {h: "Moments", p: "Turning effects (Moments) depend on force and distance. They explain how levers and simple machines work."}
+            ],
+            quiz: [
+                {q: "Speed = Distance / ...?", o: ["Force", "Time", "Mass"], a: 1},
+                {q: "A flat line on a distance-time graph means...", o: ["Steady speed", "Stopped", "Accelerating"], a: 1},
+                {q: "Unit of Pressure?", o: ["Newton", "Pascal", "Joule"], a: 1},
+                {q: "Liquid pressure is highest at the...", o: ["Surface", "Middle", "Bottom"], a: 2},
+                {q: "Moment = Force times ...?", o: ["Area", "Distance", "Speed"], a: 1},
+                {q: "Upthrust helps objects...", o: ["Sink", "Float", "Melt"], a: 1},
+                {q: "Small area + Large force = ...?", o: ["Low pressure", "High pressure", "No pressure"], a: 1},
+                {q: "Gas pressure is caused by particle...?", o: ["Vibrations", "Collisions", "Weight"], a: 1},
+                {q: "To increase a moment, use a... lever.", o: ["Shorter", "Longer"], a: 1},
+                {q: "If a car's speed is 20m/s, how far in 10s?", o: ["2m", "200m", "0.5m"], a: 1}
+            ]
+        },
+    }
+    };
+
+    let currentUser = null;
+    let userData = { coins: 0, streak: 0, awards: [], mastered: [] };
+    let currentCategory = "Activate 2";
+
+    function handleAuth() {
+        const name = document.getElementById('user-input').value.trim();
+        if(!name) return alert("Please enter a username.");
+        currentUser = name;
+        const saved = localStorage.getItem('aegis_final_' + name);
+        userData = saved ? JSON.parse(saved) : { coins: 0, streak: 0, awards: [], mastered: [] };
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('display-name').innerText = currentUser;
+        renderTabs();
+        updateUI();
+        renderPath();
+    }
+
+    function save() {
+        if(currentUser) localStorage.setItem('aegis_final_' + currentUser, JSON.stringify(userData));
+    }
+
+    function renderTabs() {
+        const container = document.getElementById('category-tabs');
+        container.innerHTML = "";
+        Object.keys(masteryData).forEach(cat => {
+            const btn = document.createElement('div');
+            btn.className = `cat-tab ${cat === currentCategory ? 'active' : ''}`;
+            btn.innerText = cat;
+            btn.onclick = () => { currentCategory = cat; renderTabs(); renderPath(); };
+            container.appendChild(btn);
+        });
+    }
+
+    function renderPath() {
+        const grid = document.getElementById('path-grid');
+        grid.innerHTML = "";
+        const nuggets = masteryData[currentCategory];
+        for(let id in nuggets) {
+            const isMastered = userData.mastered.includes(id);
+            const card = document.createElement('div');
+            card.className = "nugget-card";
+            card.innerHTML = `
+                <span class="nugget-status">${isMastered ? "✅ Mastered" : "🔥 Ready"}</span>
+                <h3>${id}</h3>
+                <p>${nuggets[id].title}</p>
+            `;
+            card.onclick = () => startNugget(id);
+            grid.appendChild(card);
+        }
+    }
+
+    function startNugget(id) {
+        document.getElementById('content-overlay').style.display = 'flex';
+        const nugget = masteryData[currentCategory][id];
+        if (nugget.slides && nugget.slides.length > 0) {
+            showSlide(id, 0);
+        } else {
+            showQuestion(id, 0);
+        }
+    }
+
+    function showSlide(id, slideIdx) {
+        const nugget = masteryData[currentCategory][id];
+        const slide = nugget.slides[slideIdx];
+        const isLast = slideIdx === nugget.slides.length - 1;
+
+        document.getElementById('quiz-area').innerHTML = `
+            <h1>${slide.h}</h1>
+            <p style="font-size: 1.2rem; margin: 20px 0;">${slide.p}</p>
+            <button class="nav-btn" style="background: var(--century-purple); color: white; text-align: center;" 
+                onclick="${isLast ? `showQuestion('${id}', 0)` : `showSlide('${id}', ${slideIdx + 1})`}">
+                ${isLast ? "Start Quiz" : "Next Slide"}
+            </button>
+        `;
+    }
+
+    function showQuestion(id, qIdx) {
+        const nugget = masteryData[currentCategory][id];
+        const q = nugget.quiz[qIdx];
+        document.getElementById('quiz-area').innerHTML = `
+            <p style="color:var(--century-purple); font-weight:bold;">Question ${qIdx + 1} of ${nugget.quiz.length}</p>
+            <h2 style="font-size: 1.8rem; margin-bottom: 30px;">${q.q}</h2>
+            ${q.o.map((opt, i) => `<button class="opt-btn" onclick="answer('${id}', ${qIdx}, ${i})">${opt}</button>`).join('')}
+        `;
+    }
+
+    function answer(id, qIdx, choice) {
+        const nugget = masteryData[currentCategory][id];
+        const correct = nugget.quiz[qIdx].a;
+
+        if(choice === correct) {
+            if (qIdx === nugget.quiz.length - 1) {
+                // Finished whole quiz
+                userData.coins += 10;
+                userData.streak++;
+                if(!userData.mastered.includes(id)) userData.mastered.push(id);
+                alert("Nugget Mastered! +10 Coins");
+                closeOverlay();
+            } else {
+                showQuestion(id, qIdx + 1);
+            }
+        } else {
+            userData.streak = 0;
+            alert("Incorrect. Restarting nugget.");
+            closeOverlay();
+        }
+        save();
+        updateUI();
+        renderPath();
+    }
+
+    function closeOverlay() {
+        document.getElementById('content-overlay').style.display = 'none';
+    }
+
+    function rollAward() {
+        if(userData.coins < 25) return alert("Need 25 coins!");
+        userData.coins -= 25;
+        const anim = document.getElementById('roll-animation');
+        let counter = 0;
+        const interval = setInterval(() => {
+            anim.innerText = AWARDS[Math.floor(Math.random() * AWARDS.length)];
+            counter++;
+            if(counter > 15) {
+                clearInterval(interval);
+                const prize = AWARDS[Math.floor(Math.random() * AWARDS.length)];
+                anim.innerText = prize;
+                if(!userData.awards.includes(prize)) userData.awards.push(prize);
+                save();
+                updateUI();
+            }
+        }, 80);
+    }
+
+    function showSection(id) {
+        ['path', 'shop', 'awards'].forEach(s => document.getElementById('section-'+s).style.display = 'none');
+        document.getElementById('section-'+id).style.display = 'block';
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('nav-'+id).classList.add('active');
+    }
+
+    function updateUI() {
+        document.getElementById('coin-val').innerText = userData.coins;
+        document.getElementById('streak-val').innerText = userData.streak;
+        const div = document.getElementById('award-display');
+        div.innerHTML = "";
+        AWARDS.forEach(a => {
+            const span = document.createElement('div');
+            span.className = "award-icon" + (userData.awards.includes(a) ? " unlocked" : "");
+            span.innerText = a;
+            div.appendChild(span);
+        });
+    }
+</script>
+</body>
+</html>
